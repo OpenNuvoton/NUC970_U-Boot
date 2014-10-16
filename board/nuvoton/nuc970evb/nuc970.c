@@ -46,6 +46,8 @@ DECLARE_GLOBAL_DATA_PTR;
 
 int board_early_init_f (void)
 {
+        writel(readl(REG_PCLKEN0) | 0x10000, REG_PCLKEN0);   // UART clk
+        writel(readl(REG_PCLKEN0) | 0x100, REG_PCLKEN0);   // Timer clk
 
         return 0;
 }
@@ -171,9 +173,6 @@ void enable_caches(void)
 int board_init(void)
 {
         gd->bd->bi_boot_params = 0x100;
-
-        writel(readl(REG_PCLKEN0) | 0x10000, REG_PCLKEN0);   // UART clk
-        writel(readl(REG_PCLKEN0) | 0x100, REG_PCLKEN0);   // Timer clk
 
         return(0);
 }

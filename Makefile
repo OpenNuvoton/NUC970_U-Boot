@@ -782,6 +782,19 @@ $(obj).boards.depend:	boards.cfg
 lcname	= $(shell echo $(1) | sed -e 's/\(.*\)_config/\L\1/')
 ucname	= $(shell echo $(1) | sed -e 's/\(.*\)_config/\U\1/')
 
+######################################################################
+#nuc970 
+######################################################################
+nuc970_nand_config:     unconfig
+	@mkdir -p $(obj)include $(obj)board/nuvoton/nuc970evb
+	@mkdir -p $(obj)nand_spl/board/nuvoton/nuc970evb
+	@echo "#define CONFIG_NAND_U_BOOT" > $(obj)include/config.h
+	@echo "CONFIG_NAND_U_BOOT = y" >> $(obj)include/config.mk
+	@echo "RAM_TEXT = 0x400000" >> $(obj)board/nuvoton/nuc970evb/config.tmp
+	@$(MKCONFIG) nuc970_evb arm arm926ejs nuc970evb nuvoton nuc970
+	@echo "CONFIG_NAND_U_BOOT = y" >> $(obj)include/config.mk
+
+
 #########################################################################
 ## ARM1176 Systems
 #########################################################################

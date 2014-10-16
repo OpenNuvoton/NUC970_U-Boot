@@ -27,7 +27,7 @@
 #define __CONFIG_H
 
 
-#define CONFIG_SYS_TEXT_BASE		0x800000      	/* RAM boot */
+//#define CONFIG_SYS_TEXT_BASE		0x800000      	/* RAM boot */
 //#define CONFIG_SYS_TEXT_BASE            0x200         /* SPI/NAND boot */
 #define CONFIG_SYS_LOAD_ADDR            0x8000
 #define CONFIG_EXT_CLK	                12000000        /* 12 MHz crystal */
@@ -109,13 +109,51 @@
 #define CONFIG_CMD_NAND		1
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_SYS_NAND_BASE	0xB000D000
+#define CONFIG_SYS_NAND_ECCBYTES        12
 #ifdef CONFIG_ENV_IS_IN_NAND
-#define CONFIG_ENV_OFFSET       0x40000
+#define CONFIG_ENV_OFFSET       0x20000
 #define CONFIG_ENV_SIZE         0x10000
 #define CONFIG_ENV_SECT_SIZE    0x20000
 #define CONFIG_ENV_OVERWRITE
 #endif
 #endif
+
+//#define CONFIG_SYS_NAND_U_BOOT_OFFS     8192    /* Offset to RAM U-Boot image */
+#define CONFIG_SYS_NAND_U_BOOT_OFFS     (256 *1024)    /* Offset to RAM U-Boot image */
+/* total memory available to uboot */
+#define CONFIG_SYS_UBOOT_SIZE           (1024 * 1024)
+
+#ifdef CONFIG_NAND_SPL
+/* base address for uboot */
+#define CONFIG_SYS_PHY_UBOOT_BASE       (CONFIG_SYS_SDRAM_BASE + 0x400000)
+
+#define CONFIG_SYS_NAND_U_BOOT_DST      CONFIG_SYS_PHY_UBOOT_BASE       /* NUB load-addr      */
+#define CONFIG_SYS_NAND_U_BOOT_START    CONFIG_SYS_NAND_U_BOOT_DST      /* NUB start-addr     */
+
+#define CONFIG_SYS_NAND_U_BOOT_SIZE     (248 * 1024)    /* Size of RAM U-Boot image   */
+
+
+/* NAND chip page size          */
+#define CONFIG_SYS_NAND_PAGE_SIZE       2048
+/* NAND chip block size         */
+#define CONFIG_SYS_NAND_BLOCK_SIZE      (128 * 1024)
+/* NAND chip page per block count  */
+#define CONFIG_SYS_NAND_PAGE_COUNT      64
+/* Location of the bad-block label */
+#define CONFIG_SYS_NAND_BAD_BLOCK_POS   0
+/* Size of the block protected by one OOB (Spare Area in Samsung terminology) */
+#define CONFIG_SYS_NAND_ECCSIZE CONFIG_SYS_NAND_PAGE_SIZE
+/* Number of ECC-blocks per NAND page */
+#define CONFIG_SYS_NAND_ECCSTEPS        (CONFIG_SYS_NAND_PAGE_SIZE / CONFIG_SYS_NAND_ECCSIZE)
+/* Size of a single OOB region */
+#define CONFIG_SYS_NAND_OOBSIZE 64
+/* Number of ECC bytes per page */
+#define CONFIG_SYS_NAND_ECCTOTAL        (CONFIG_SYS_NAND_ECCBYTES * CONFIG_SYS_NAND_ECCSTEPS)
+/* ECC byte positions */
+#define CONFIG_SYS_NAND_ECCPOS          {40, 41, 42, 43, 44, 45, 46, 47, \
+                                 48, 49, 50, 51, 52, 53, 54, 55, \
+                                 56, 57, 58, 59, 60, 61, 62, 63}
+#endif //CONFIG_NAND_SPL
 
 
 /* SPI flash */

@@ -26,9 +26,17 @@
 
 #include <serial.h>
 
-#include "serial_nuc970.h"
+//#include "serial_nuc970.h"
+#include <asm/arch/serial_nuc970.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+int nuc970_serial_init (void);
+void nuc970_serial_putc (const char ch);
+void nuc970_serial_puts (const char *s);
+int nuc970_serial_getc (void);
+int nuc970_serial_tstc (void);
+void nuc970_serial_setbrg (void);
 
 typedef struct
 {
