@@ -37,7 +37,6 @@ static int nand_is_bad_block(struct mtd_info *mtd, int block)
 	int page_addr = 0 + block * CONFIG_SYS_NAND_PAGE_COUNT;
 	
 	this->cmdfunc(mtd, NAND_CMD_READOOB, 0 , page_addr );
-	this->cmdfunc(mtd, NAND_CMD_RNDOUT, mtd->writesize, -1);
 
 	if(this->read_byte(mtd)!=0xff)
 		return 1;
