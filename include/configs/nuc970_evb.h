@@ -27,7 +27,7 @@
 #define __CONFIG_H
 
 
-//#define CONFIG_SYS_TEXT_BASE		0x800000      	/* RAM boot */
+//#define CONFIG_SYS_TEXT_BASE		0xE00000      	/* RAM boot */
 //#define CONFIG_SYS_TEXT_BASE            0x200         /* SPI/NAND boot */
 #define CONFIG_SYS_LOAD_ADDR            0x8000
 #define CONFIG_EXT_CLK	                12000000        /* 12 MHz crystal */
@@ -125,7 +125,7 @@
 
 #ifdef CONFIG_NAND_SPL
 /* base address for uboot */
-#define CONFIG_SYS_PHY_UBOOT_BASE       (CONFIG_SYS_SDRAM_BASE + 0x400000)
+#define CONFIG_SYS_PHY_UBOOT_BASE       (CONFIG_SYS_SDRAM_BASE + 0xE00000)
 
 #define CONFIG_SYS_NAND_U_BOOT_DST      CONFIG_SYS_PHY_UBOOT_BASE       /* NUB load-addr      */
 #define CONFIG_SYS_NAND_U_BOOT_START    CONFIG_SYS_NAND_U_BOOT_DST      /* NUB start-addr     */

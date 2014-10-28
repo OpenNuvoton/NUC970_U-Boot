@@ -790,7 +790,7 @@ nuc970_nand_config:     unconfig
 	@mkdir -p $(obj)nand_spl/board/nuvoton/nuc970evb
 	@echo "#define CONFIG_NAND_U_BOOT" > $(obj)include/config.h
 	@echo "CONFIG_NAND_U_BOOT = y" >> $(obj)include/config.mk
-	@echo "RAM_TEXT = 0x400000" >> $(obj)board/nuvoton/nuc970evb/config.tmp
+	@echo "RAM_TEXT = 0xE00000" >> $(obj)board/nuvoton/nuc970evb/config.tmp
 	@$(MKCONFIG) nuc970_evb arm arm926ejs nuc970evb nuvoton nuc970
 	@echo "CONFIG_NAND_U_BOOT = y" >> $(obj)include/config.mk
 
