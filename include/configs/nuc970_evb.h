@@ -130,7 +130,7 @@
 #define CONFIG_SYS_NAND_U_BOOT_DST      CONFIG_SYS_PHY_UBOOT_BASE       /* NUB load-addr      */
 #define CONFIG_SYS_NAND_U_BOOT_START    CONFIG_SYS_NAND_U_BOOT_DST      /* NUB start-addr     */
 
-#define CONFIG_SYS_NAND_U_BOOT_SIZE     (248 * 1024)    /* Size of RAM U-Boot image   */
+#define CONFIG_SYS_NAND_U_BOOT_SIZE     (300 * 1024)    /* Size of RAM U-Boot image   */
 
 
 /* NAND chip page size          */
@@ -199,7 +199,7 @@
 #endif
 
 /* Following block is for MMC support */
-#if 0
+#if 1
 #define CONFIG_NUC970_MMC
 #define CONFIG_CMD_MMC
 #define CONFIG_CMD_FAT
@@ -207,6 +207,8 @@
 #define CONFIG_GENERIC_MMC
 #define CONFIG_DOS_PARTITION
 //#define CONFIG_MMC_TRACE
+#define CONFIG_SD_PORT0
+//#define CONFIG_SD_PORT1
 #endif
 
 /* Following block is for EHCI support*/

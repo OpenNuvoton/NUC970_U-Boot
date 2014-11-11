@@ -33,13 +33,14 @@
 #define REG_MFSEL       0xB000000C
 #define REG_MFP_GPA_L	0xB0000070
 #define REG_MFP_GPA_H	0xB0000074
+#define REG_MFP_GPC_L	0xB0000080
+#define REG_MFP_GPD_L	0xB0000088
 #define REG_MFP_GPE_L	0xB0000090
 #define REG_MFP_GPE_H	0xB0000094
 #define REG_MFP_GPF_L	0xB0000098
 #define REG_MFP_GPF_H	0xB000009C
-
-#define REG_GPIOD_DIR           0xB8003014
-#define REG_GPIOD_DATAOUT       0xB8003018
+#define REG_MFP_GPH_L	0xB00000A8
+#define REG_MFP_GPH_H	0xB00000AC
 
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -139,16 +140,47 @@ int board_eth_init(bd_t *bis)
 #endif
 
 #ifdef CONFIG_NUC970_MMC
+#define REG_CLKDIVCTL9  0xB0000244
+#define SDH_BA          0xB000C000 /* SD Host */
+#define REG_SDH_GCTL    (SDH_BA+0x800)   /* Global Control and Status Register */
+#define REG_SDCSR       (SDH_BA+0x820)   /* SD control and status register */
+#define REG_SDIER       (SDH_BA+0x828)   /* SD interrupt enable register */
+#define REG_ECTL        (SDH_BA+0x840)   /* SD Host extend control register */
+#define GCTL_RST        0x1
+#define SD_EN           0x2
+
 int board_mmc_init(bd_t *bd)
 {
-        writel(readl(REG_CLKEN) | 0x30, REG_CLKEN);   // FMI & DMAC clk
-        writel(readl(REG_CLKEN1) | 0x2, REG_CLKEN1);  // SD clk
-        writel(readl(REG_CLKSEL) | 0x1000, REG_CLKSEL);  // SD clk
-        writel((readl(REG_MFSEL) & ~0xF0) | 0xA0, REG_MFSEL);    // SD pins   
-        writel(readl(REG_GPIOD_DIR) | 0x100, REG_GPIOD_DIR);     // GPIOD8 outoput
-        writel(readl(REG_GPIOD_DATAOUT) & ~0x100, REG_GPIOD_DATAOUT);  // Turn on SD power
-        
-        return(nuc900_mmc_init());
+	volatile int i;
+
+        //writel(readl(REG_HCLKEN) | 0x40700000, REG_HCLKEN);   // SDH & eMMC & NAND & FMI clk
+        writel(readl(REG_HCLKEN) | 0x40000000, REG_HCLKEN);   // SDH clk
+
+	writel((readl(REG_CLKDIVCTL9) & ~0xFF), REG_CLKDIVCTL9); //Set SDH clock source from XIN
+        writel((readl(REG_CLKDIVCTL9) & ~0xFF00) | (0x1d << 8), REG_CLKDIVCTL9); //Set SDH clock divider => 400 KHz
+ 
+        //writel(0x00666666, REG_MFP_GPC_L);   // Set GPC for eMMC
+        writel(0x66666666, REG_MFP_GPD_L);   // Set GPD for SD0
+	writel((readl(REG_MFP_GPH_L) & ~0xff000000) | 0x66000000, REG_MFP_GPH_L);// pin H6~H7 for SD1
+	writel((readl(REG_MFP_GPH_H) & ~0x00ffffff) | 0x666666, REG_MFP_GPH_H);// pin H8~H13 for SD1
+
+        writel(GCTL_RST, REG_SDH_GCTL);
+        for(i = 0; i < 10; i++);        // Need few clock delay 'til SW_RST auto cleared.
+        writel(SD_EN, REG_SDH_GCTL);
+
+        //writel(readl(REG_ECTL) & ~1, REG_ECTL); // SD port 0 power enable
+	//writel(readl(REG_ECTL) & ~2, REG_ECTL); // SD port 1 power enable
+        writel(readl(REG_ECTL) & ~3, REG_ECTL); // SD port 0,1 power enable
+
+#ifdef CONFIG_SD_PORT0
+        writel(readl(REG_SDCSR) & ~0x60000000, REG_SDCSR); // SD port selection : Select SD0
+        writel(readl(REG_SDIER) | 0x40000000, REG_SDIER); // SD port 0 card detect source set to SD0_nCD
+#else
+        writel((readl(REG_SDCSR) & ~0x60000000) | 0x20000000, REG_SDCSR); // SD port selection : Select SD1
+        writel(readl(REG_SDIER) | 0x80000000, REG_SDIER); // SD port 0 card detect source set to SD1_nCD
+#endif
+
+        return(nuc970_mmc_init());
         
 }
 #endif
