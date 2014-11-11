@@ -62,9 +62,11 @@ int nuc970_mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *d
         int i, j, tmp[5];
         unsigned int block_length, blocks;
         unsigned int sdcsr = readl(REG_SDCSR) & DBW;      // keep bus width. config other fields in this fuction
+
 /*
         printf("[%s]REG_SDH_GCTL = 0x%x\n",__FUNCTION__,readl(REG_SDH_GCTL));
         printf("[%s]REG_SDCSR = 0x%x\n",__FUNCTION__,readl(REG_SDCSR));
+        printf("[%s]REG_SDIER = 0x%x\n",__FUNCTION__,readl(REG_SDIER));
         printf("[%s]REG_SDISR = 0x%x\n",__FUNCTION__,readl(REG_SDISR));
         printf("[%s]REG_ECTL = 0x%x\n",__FUNCTION__,readl(REG_ECTL));
         printf("[%s]cmd->cmdidx = 0x%x\n",__FUNCTION__,cmd->cmdidx);
@@ -111,8 +113,9 @@ int nuc970_mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *d
                         if (blocks < 256)
                                 sdcsr |= (blocks << 16);
                         else
-                                sdcsr &= ~0xff0000;
+                                printf("NUC970 SD Max block transfer is 255!!\n");
                 }                
+                //printf("sdcsr 0x%x \n", sdcsr);
                 
                 if (data->flags == MMC_DATA_READ) {
                         sdcsr |= DI_EN;
@@ -164,7 +167,7 @@ int nuc970_mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *d
                                 }
                         } 
                         //printf("=>%x %x %x %x\n", sdcsr, readl(REG_SDBLEN), readl(REG_SDRSP0), readl(REG_SDRSP1));
-        //printf("[xxxx]REG_SDISR = 0x%x\n",readl(REG_SDISR));
+        		//printf("[xxxx]REG_SDISR = 0x%x\n",readl(REG_SDISR));
                         cmd->response[0] = (readl(REG_SDRSP0) << 8) | (readl(REG_SDRSP1) & 0xff);
                         cmd->response[1] = cmd->response[2] = cmd->response[3] = 0;                        
                 }
@@ -181,6 +184,7 @@ int nuc970_mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *d
         
         if (data) {
                 if (data->flags & MMC_DATA_READ) {
+			//printf("R\n");
                         //printf("**** %x %x %x %x\n", readl(REG_DMACCSR), readl(REG_DMACSAR2), readl(REG_DMACBCR), readl(REG_DMACISR));
                         //writel(readl(REG_SDCSR) | DI_EN, REG_SDCSR);
                         
@@ -284,6 +288,7 @@ static int _nuc970_mmc_init(struct mmc *mmc)
         printf("[%s]REG_MFP_GPH_L = 0x%x\n",__FUNCTION__,readl(REG_MFP_GPH_L));
         printf("[%s]REG_MFP_GPH_H = 0x%x\n",__FUNCTION__,readl(REG_MFP_GPH_H));
 */
+ 
         return(0);
 }
 
@@ -291,10 +296,9 @@ static int _nuc970_mmc_init(struct mmc *mmc)
 int board_mmc_getcd(struct mmc *mmc)
 {
 	u8 cd;
-/*
-	printf("[%s] REG_SDISR = 0x%x\n",__FUNCTION__,readl(REG_SDISR));
-	printf("[%s] REG_SDIER = 0x%x\n",__FUNCTION__,readl(REG_SDIER));
-*/
+
+	//printf("[%s] REG_SDISR = 0x%x\n",__FUNCTION__,readl(REG_SDISR));
+	//printf("[%s] REG_SDIER = 0x%x\n",__FUNCTION__,readl(REG_SDIER));
 
 #ifdef CONFIG_SD_PORT0
 	if (((readl(REG_SDIER) & 0x40000000) >> 30) == 0)  // for DAT3 mode
@@ -332,7 +336,8 @@ int nuc970_mmc_init(void)
         mmc->voltages = MMC_VDD_33_34 | MMC_VDD_32_33;
         mmc->host_caps = MMC_MODE_4BIT | MMC_MODE_HS | MMC_MODE_HC;
 
-        mmc->b_max = 0;
+        //mmc->b_max = 0;
+        mmc->b_max = 255;
 
         mmc_register(mmc);
         
