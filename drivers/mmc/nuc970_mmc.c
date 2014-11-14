@@ -93,11 +93,10 @@ int nuc970_mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *d
                 writel(0xFFFF, REG_SDTMOUT);
         }
            
-#ifdef CONFIG_SD_PORT0 
-        sdcsr &= ~0x60000000;                    // Select port 0
-#else
-        sdcsr = (sdcsr & ~0x60000000) | 0x20000000;                    // Select port 1
-#endif
+	if (mmc->priv == 0) // SD port 0
+        	sdcsr &= ~0x60000000;                    // Select port 0
+	else
+        	sdcsr = (sdcsr & ~0x60000000) | 0x20000000;                    // Select port 1
 
         sdcsr |= 0x01010000;                    // Set SDNWR and BLK_CNT to 1, update later
         sdcsr |= (cmd->cmdidx << 8) | CO_EN;
@@ -271,13 +270,14 @@ static int _nuc970_mmc_init(struct mmc *mmc)
         //writel(readl(REG_ECTL) & ~2, REG_ECTL); // SD port 1 power enable
         writel(readl(REG_ECTL) & ~3, REG_ECTL); // SD port 0,1 power enable
 
-#ifdef CONFIG_SD_PORT0 
-        writel(readl(REG_SDCSR) & ~0x60000000, REG_SDCSR); // SD port selection : Select SD0
-        writel(readl(REG_SDIER) | 0x40000000, REG_SDIER); // SD port 0 card detect source set to SD0_nCD
-#else
-	writel((readl(REG_SDCSR) & ~0x60000000) | 0x20000000, REG_SDCSR); // SD port selection : Select SD1
-        writel(readl(REG_SDIER) | 0x80000000, REG_SDIER); // SD port 0 card detect source set to SD1_nCD
-#endif
+	if (mmc->priv == 0) { // SD port 0
+        	writel(readl(REG_SDCSR) & ~0x60000000, REG_SDCSR); // SD port selection : Select SD0
+        	writel(readl(REG_SDIER) | 0x40000000, REG_SDIER); // SD port 0 card detect source set to SD0_nCD
+	}
+	else {
+		writel((readl(REG_SDCSR) & ~0x60000000) | 0x20000000, REG_SDCSR); // SD port selection : Select SD1
+        	writel(readl(REG_SDIER) | 0x80000000, REG_SDIER); // SD port 0 card detect source set to SD1_nCD
+	}
 
 /*
         printf("[%s]REG_SDH_GCTL = 0x%x\n",__FUNCTION__,readl(REG_SDH_GCTL));
@@ -300,17 +300,18 @@ int board_mmc_getcd(struct mmc *mmc)
 	//printf("[%s] REG_SDISR = 0x%x\n",__FUNCTION__,readl(REG_SDISR));
 	//printf("[%s] REG_SDIER = 0x%x\n",__FUNCTION__,readl(REG_SDIER));
 
-#ifdef CONFIG_SD_PORT0
-	if (((readl(REG_SDIER) & 0x40000000) >> 30) == 0)  // for DAT3 mode
-        	cd = ((readl(REG_SDISR) & (1 << 16)) == (1 << 16)) ? 1 : 0;
-	else
-        	cd = ((readl(REG_SDISR) & (1 << 16)) == (1 << 16)) ? 0 : 1;
-#else
-	if (((readl(REG_SDIER) & 0x80000000) >> 31) == 0)  // for DAT3 mode
-        	cd = ((readl(REG_SDISR) & (1 << 17)) == (1 << 17)) ? 1 : 0;
-	else
-        	cd = ((readl(REG_SDISR) & (1 << 17)) == (1 << 17)) ? 0 : 1;
-#endif
+	if (mmc->priv == 0) {
+		if (((readl(REG_SDIER) & 0x40000000) >> 30) == 0)  // for DAT3 mode
+        		cd = ((readl(REG_SDISR) & (1 << 16)) == (1 << 16)) ? 1 : 0;
+		else
+        		cd = ((readl(REG_SDISR) & (1 << 16)) == (1 << 16)) ? 0 : 1;
+	}
+	else {
+		if (((readl(REG_SDIER) & 0x80000000) >> 31) == 0)  // for DAT3 mode
+        		cd = ((readl(REG_SDISR) & (1 << 17)) == (1 << 17)) ? 1 : 0;
+		else
+        		cd = ((readl(REG_SDISR) & (1 << 17)) == (1 << 17)) ? 0 : 1;
+	}
 
 	//printf("cd = %d\n",cd);
 
@@ -318,7 +319,7 @@ int board_mmc_getcd(struct mmc *mmc)
         return cd;
 }
 
-int nuc970_mmc_init(void)
+int nuc970_mmc_init(int port)
 {
         struct mmc *mmc;
         
@@ -339,8 +340,9 @@ int nuc970_mmc_init(void)
         //mmc->b_max = 0;
         mmc->b_max = 255;
 
+        mmc->priv = port; 
         mmc_register(mmc);
-        
+
         return(0);
 }
 

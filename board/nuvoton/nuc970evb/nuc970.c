@@ -180,7 +180,10 @@ int board_mmc_init(bd_t *bd)
         writel(readl(REG_SDIER) | 0x80000000, REG_SDIER); // SD port 0 card detect source set to SD1_nCD
 #endif
 
-        return(nuc970_mmc_init());
+	nuc970_mmc_init(0); // init for SD port 0
+	nuc970_mmc_init(1); // init for SD port 1
+	return 0;
+        //return(nuc970_mmc_init());
         
 }
 #endif

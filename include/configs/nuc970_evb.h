@@ -207,8 +207,6 @@
 #define CONFIG_GENERIC_MMC
 #define CONFIG_DOS_PARTITION
 //#define CONFIG_MMC_TRACE
-#define CONFIG_SD_PORT0
-//#define CONFIG_SD_PORT1
 #endif
 
 /* Following block is for EHCI support*/
