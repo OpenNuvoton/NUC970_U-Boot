@@ -172,14 +172,6 @@ int board_mmc_init(bd_t *bd)
 	//writel(readl(REG_ECTL) & ~2, REG_ECTL); // SD port 1 power enable
         writel(readl(REG_ECTL) & ~3, REG_ECTL); // SD port 0,1 power enable
 
-#ifdef CONFIG_SD_PORT0
-        writel(readl(REG_SDCSR) & ~0x60000000, REG_SDCSR); // SD port selection : Select SD0
-        writel(readl(REG_SDIER) | 0x40000000, REG_SDIER); // SD port 0 card detect source set to SD0_nCD
-#else
-        writel((readl(REG_SDCSR) & ~0x60000000) | 0x20000000, REG_SDCSR); // SD port selection : Select SD1
-        writel(readl(REG_SDIER) | 0x80000000, REG_SDIER); // SD port 0 card detect source set to SD1_nCD
-#endif
-
 	nuc970_mmc_init(0); // init for SD port 0
 	nuc970_mmc_init(1); // init for SD port 1
 	return 0;
