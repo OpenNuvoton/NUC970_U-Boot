@@ -187,7 +187,7 @@
 #define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 
 /* Following block is for LCD support */
-#if 0
+#if 1
 #define CONFIG_LCD
 #define CONFIG_NUC970_LCD
 #define LCD_BPP                         LCD_COLOR16

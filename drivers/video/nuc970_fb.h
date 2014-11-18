@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Nuvoton Technology Corp.
+ * Copyright (c) 2014 Nuvoton Technology Corp.
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -81,9 +81,6 @@
 #define REG_GPIOH_DIR                   (GPIO_BASE  + 0x54)
 #define REG_GPIOH_DOUT                  (GPIO_BASE  + 0x58)
 
-#define REG_HCLKEN      0xB0000210
-#define REG_CLKDIV      0xB0000208
-#define REG_MFSEL       0xB000000C
 
 typedef struct
 {
@@ -103,3 +100,4 @@ typedef struct
 }vpost_cfg_t;
 
 #endif
+

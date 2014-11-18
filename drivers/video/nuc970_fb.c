@@ -26,6 +26,16 @@
 #include <lcd.h>
 #include "nuc970_fb.h" 
 
+#define REG_HCLKEN      0xB0000210
+#define REG_CLKDIVCTL0  0xB0000220
+#define REG_CLKDIVCTL1  0xB0000224
+#define REG_CLKUPLLCON  0xB0000264
+#define REG_MFP_GPA_L   0xB0000070
+#define REG_MFP_GPA_H   0xB0000074
+#define REG_MFP_GPD_H   0xB000008C
+#define REG_MFP_GPG_L   0xB00000A0
+#define REG_MFP_GPG_H   0xB00000A4
+
 vpost_cfg_t vpost_cfg = {
         .clk            = 5000000,
         .hight          = 240,
@@ -81,16 +91,28 @@ void lcd_ctrl_init(void *lcdbase)
         int div;
 
         // VPOST clk
-        writel(readl(REG_CLKEN) | 0x01, REG_CLKEN);  
+        writel(readl(REG_HCLKEN) | 0x02000000, REG_HCLKEN); // LCD 
         div = (CONFIG_EXT_CLK / vpost_cfg.clk) - 1;
         if(div < 0)
                 div = 0;
-        if(div > 0xF)
-                div = 0xF;
-        writel((readl(REG_CLKDIV) & ~0xF000) | (div << 12), REG_CLKDIV);
+        if(div > 0xff)
+                div = 0xff;
+
+	div = 9; //CWWeng test
+	//printf("[%s] div = 0x%x\n",__FUNCTION__,div);
+
+        //writel((readl(REG_CLKDIVCTL1) & ~0x18), REG_CLKDIVCTL1); // Set VPOST clock source from XIN
+        //writel((readl(REG_CLKDIVCTL1) & ~0x18) | (2 << 3), REG_CLKDIVCTL1); // Set VPOST clock source from ACLKOUT
+        writel((readl(REG_CLKDIVCTL1) & ~0x18) | (3 << 3), REG_CLKDIVCTL1); // Set VPOST clock source from UCLKOUT
+        writel((readl(REG_CLKDIVCTL1) & ~0xFF00) | (div << 8), REG_CLKDIVCTL1);
 
         // GPIO
-        writel(readl(REG_MFSEL) | 0x0C, REG_MFSEL);
+        writel(0x22222222, REG_MFP_GPA_L); // LCD_DATA0~7
+        writel(0x22222222, REG_MFP_GPA_H); // LCD_DATA8~15
+        writel(0x22222222, REG_MFP_GPD_H); // LCD_DATA16~23
+        writel((readl(REG_MFP_GPG_L) & ~0xFF000000) | 0x22000000, REG_MFP_GPG_L); // LCD_CLK LCD_HSYNC
+        writel((readl(REG_MFP_GPG_H) & ~0xFF) | 0x22, REG_MFP_GPG_H); // LCD_VSYNC LCD_DEN
+
         writel(readl(REG_GPIOH_DIR) | (1 << 2), REG_GPIOH_DIR);
         writel(readl(REG_GPIOH_DOUT) | (1 << 2), REG_GPIOH_DOUT);
         
@@ -125,7 +147,11 @@ void lcd_ctrl_init(void *lcdbase)
         writel(vpost_cfg.dccs, REG_LCM_DCCS);       
         
 
+	//printf("REG_CLKDIVCTL0 = 0x%x\n",readl(REG_CLKDIVCTL0));
+	//printf("REG_CLKDIVCTL1 = 0x%x\n",readl(REG_CLKDIVCTL1));
+	//printf("REG_CLKUPLLCON = 0x%x\n",readl(REG_CLKUPLLCON));
         
+
         return;
 }
 
@@ -139,8 +165,9 @@ void lcd_getcolreg (ushort regno, ushort *red, ushort *green, ushort *blue)
 void lcd_show_board_info(void)
 {
         lcd_printf ("%s\n", U_BOOT_VERSION);
-        lcd_printf ("(C) 2012 Nuvoton Technology Corp.\n");
-        lcd_printf ("NUC950 Evaluation Board\n");
+        lcd_printf ("(C) 2014 Nuvoton Technology Corp.\n");
+        lcd_printf ("NUC970 Evaluation Board\n");
 
 }
 #endif /* CONFIG_LCD_INFO */
+
