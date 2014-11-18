@@ -1,8 +1,8 @@
 /*
- * (C) Copyright 2012
+ * (C) Copyright 2014
  * Nuvoton Technology Corp. <www.nuvoton.com>
  *
- * Configuation settings for the NUC950 EV Board.
+ * Configuation settings for the NUC970 EV Board.
  *
  * See file CREDITS for list of people who contributed to this
  * project.
