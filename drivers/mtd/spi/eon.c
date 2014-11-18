@@ -27,12 +27,12 @@ static const struct eon_spi_flash_params eon_spi_flash_table[] = {
 		.nr_sectors = 4096,
 		.name = "EN25Q128",
 	},
-	{/* add for NUC970 COB board */
+	{
 		.idcode1 = 0x15,
 		.nr_sectors = 512,
 		.name = "EN25QH16-104HIP",
 	},
-	{/* add for NUC972 blue board, 32Mbyte */
+	{
 		.idcode1 = 0x7019,
 		.nr_sectors = 8192,
 		.name = "EN25QH256",
