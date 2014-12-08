@@ -207,6 +207,9 @@
 #define CONFIG_GENERIC_MMC
 #define CONFIG_DOS_PARTITION
 //#define CONFIG_MMC_TRACE
+#define CONFIG_NUC970_SD_PORT0
+#define CONFIG_NUC970_SD_PORT1
+#define CONFIG_NUC970_EMMC
 #endif
 
 /* Following block is for EHCI support*/

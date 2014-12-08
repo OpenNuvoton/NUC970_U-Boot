@@ -28,7 +28,7 @@
 #define _NUC970_MMC_
 
 //#define DMAC_BA   0xB000C000 /* DMA Control */
-//#define FMI_BA    0xB000D000 /* Flash Memory Card Interface */
+#define FMI_BA		0xB000D000 /* Flash Memory Card Interface */
 #define SDH_BA		0xB000C000 /* SD Host */
 
 /* DMAC Control Registers */
@@ -44,7 +44,8 @@
 /* Flash Memory Card Interface Registers */
 #define REG_SDH_GCTL            (SDH_BA+0x800)   /* Global Control and Status Register */
 #define GCTL_RST      0x1
-#define SD_EN           0x2
+#define SD_EN         0x2
+#define EMMC_EN       0x2
 
 #define REG_GINTEN              (SDH_BA+0x804)   /* Global Interrupt Control Register */
 #define REG_GINTSTS             (SDH_BA+0x808)   /* Global Interrupt Status Register */
@@ -75,6 +76,7 @@
 #define REG_SDTMOUT             (SDH_BA+0x83C)   /* SD Response/Data-in timeout register */
 #define REG_ECTL                (SDH_BA+0x840)   /* SD Host extend control register */
 
+#define REG_CLKDIVCTL3             0xB000022C
 #define REG_CLKDIVCTL9             0xB0000244
 
 //#define MMC_CLK                 100000000  /* PLL clk / 2*/
@@ -82,6 +84,24 @@
 
 // copy from linux/mmc/core.h
 #define mmc_resp_type(cmd)      ((cmd)->resp_type & (MMC_RSP_PRESENT|MMC_RSP_136|MMC_RSP_CRC|MMC_RSP_BUSY|MMC_RSP_OPCODE))
+
+#define REG_FMIDMACTL		(FMI_BA+0x400)	/* FMI DMA control register */
+#define REG_FMIDMASA		(FMI_BA+0x408)	/* FMI DMA transfer starting address register */
+#define REG_FMIDMABCNT		(FMI_BA+0x40C)	/* FMI DMA transfer byte count register */
+#define REG_FMIDMAINTEN		(FMI_BA+0x410)	/* FMI DMA interrupt enable register */
+#define REG_FMIDMAINTSTS	(FMI_BA+0x414)	/* FMI DMA interrupt status register */
+
+#define REG_FMICTL		(FMI_BA+0x800)	/* FMI control and status register */
+#define REG_FMIINTEN		(FMI_BA+0x804)	/* FMI interrupt enable register */
+#define REG_FMIINTSTS		(FMI_BA+0x808)	/* FMI interrupt status register */
+#define REG_EMMCCTL		(FMI_BA+0x820)	/* eMMC control register */
+#define REG_EMMCCMD		(FMI_BA+0x824)	/* eMMC command argument register */
+#define REG_EMMCINTEN		(FMI_BA+0x828)	/* eMMC interrupt enable register */
+#define REG_EMMCINTSTS		(FMI_BA+0x82C)	/* eMMC interrupt status register */
+#define REG_EMMCRESP0		(FMI_BA+0x830)	/* eMMC receiving response register 0 */
+#define REG_EMMCRESP1		(FMI_BA+0x834)	/* eMMC receiving response register 1 */
+#define REG_EMMCBLEN		(FMI_BA+0x838)	/* eMMC block length register */
+#define REG_EMMCTOUT		(FMI_BA+0x83C)	/* eMMC Response/Data-in time-out register */
 
 #endif
 
