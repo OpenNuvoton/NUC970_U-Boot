@@ -209,7 +209,7 @@
 //#define CONFIG_MMC_TRACE
 #define CONFIG_NUC970_SD_PORT0
 #define CONFIG_NUC970_SD_PORT1
-#define CONFIG_NUC970_EMMC
+//#define CONFIG_NUC970_EMMC    /* Don't enable eMMC(CONFIG_NUC970_EMMC) and NAND(CONFIG_NAND_NUC970) at the same time! */
 #endif
 
 /* Following block is for EHCI support*/
