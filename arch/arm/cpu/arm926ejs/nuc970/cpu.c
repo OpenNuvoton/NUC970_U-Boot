@@ -23,31 +23,37 @@
 #include <common.h>
 #include <asm/io.h>
 
-#define REG_PID         0xB0000000
+#define REG_PWRON         0xB0000004
 
 int print_cpuinfo (void)
 {
         unsigned int id;
 
-        id = readl(REG_PID) & 0xFFFF;
+        id = (readl(REG_PWRON) & 0x0F000000) >> 24;
 
         printf("CPU: ");
 
         switch(id) {
-                case 0x910:
-                        printf("NUC910\n");
-                        break;
-                case 0x920:
-                        printf("NUC910\n");
-                        break;
-                case 0x950:
-                        printf("NUC950\n");
-                        break;
-                case 0x960:
-                        printf("NUC960\n");
-                        break;
-                case 0xd008:
+                case 0:
                         printf("NUC970\n");
+                        break;
+                case 1:
+                        printf("NUC971\n");
+                        break;
+                case 2:
+                        printf("NUC972\n");
+                        break;
+                case 3:
+                        printf("NUC973\n");
+                        break;
+                case 4:
+                        printf("NUC970\n");
+                        break;
+                case 0xe:
+                        printf("NUC976\n");
+                        break;
+                case 0xf:
+                        printf("NUC977\n");
                         break;
                 default:
                         printf("Unknown\n");

@@ -22,8 +22,8 @@
 #include <common.h>
 #include <asm/io.h>
 
-#define REG_SDCONF0     0xB0001008   // SDCONF0
-#define REG_SDCONF1     0xB000100C   // SDCONF1
+#define REG_SDIC_SIZE0  0xB0001810   
+#define REG_SDIC_SIZE1  0xB0001814  
 #define REG_HCLKEN      0xB0000210
 #define REG_CLKSEL      0xB0000204
 #define REG_CLKDIV      0xB0000208
@@ -94,23 +94,16 @@ static unsigned int sdram_size(unsigned int config)
 
 void dram_init_banksize(void)
 {
-    //set to 16 Mbyte directly, not to read register
-    //gd->bd->bi_dram[0].size = sdram_size(readl(REG_SDCONF0));
-    gd->bd->bi_dram[0].size = 0x800000;
-    gd->bd->bi_dram[0].start = gd->bd->bi_dram[0].size == 0 ? 0 : (readl(REG_SDCONF0) & 0xFFF80000) >> 1;
+    gd->bd->bi_dram[0].size = sdram_size(readl(REG_SDIC_SIZE0));
+    gd->bd->bi_dram[0].start = gd->bd->bi_dram[0].size == 0 ? 0 : (readl(REG_SDIC_SIZE0) & 0x1FE00000);
 
-    //set to 16 Mbyte directly, not to read register
-    //gd->bd->bi_dram[1].size = sdram_size(readl(REG_SDCONF1));
-    gd->bd->bi_dram[1].size = 0x800000;
-    gd->bd->bi_dram[1].start = gd->bd->bi_dram[1].size == 0 ? 0 : (readl(REG_SDCONF1) & 0xFFF80000) >> 1;
-
+    gd->bd->bi_dram[1].size = sdram_size(readl(REG_SDIC_SIZE1));
+    gd->bd->bi_dram[1].start = gd->bd->bi_dram[1].size == 0 ? 0 : (readl(REG_SDIC_SIZE1) & 0x1FE00000);
 }
 
 int dram_init(void)
 {
-    //set to 16 Mbyte directly, not to read register
-    //gd->ram_size = sdram_size(readl(REG_SDCONF0)) + sdram_size(readl(REG_SDCONF1));
-    gd->ram_size = 0x1000000;
+    gd->ram_size = sdram_size(readl(REG_SDIC_SIZE0)) + sdram_size(readl(REG_SDIC_SIZE1));
 
     return(0);
 }
