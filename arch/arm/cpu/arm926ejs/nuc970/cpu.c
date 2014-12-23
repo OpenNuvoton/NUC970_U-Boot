@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012 Nuvoton Technology Corp.
+ *  Copyright (c) 2014 Nuvoton Technology Corp.
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -45,9 +45,6 @@ int print_cpuinfo (void)
                         break;
                 case 3:
                         printf("NUC973\n");
-                        break;
-                case 4:
-                        printf("NUC970\n");
                         break;
                 case 0xe:
                         printf("NUC976\n");

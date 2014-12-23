@@ -30,6 +30,7 @@
 #define REG_CLKDIVCTL8  0xB0000240
 #define REG_PCLKEN0     0xB0000218
 #define REG_CLKEN1      0xB0000224
+#define REG_WDT_CTL	0xB8001800
 #define REG_MFSEL       0xB000000C
 #define REG_MFP_GPA_L	0xB0000070
 #define REG_MFP_GPA_H	0xB0000074
@@ -224,5 +225,15 @@ int board_init(void)
     gd->bd->bi_boot_params = 0x100;
 
     return(0);
+}
+
+int board_late_init(void)
+{
+
+#ifdef CONFIG_HW_WATCHDOG
+    hw_watchdog_init();
+#endif
+
+    return 0;
 }
 

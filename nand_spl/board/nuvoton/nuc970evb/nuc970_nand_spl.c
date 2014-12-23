@@ -21,18 +21,18 @@ extern int nuc970_serial_init (void);
 void board_init_f(unsigned long bootflag)
 {
 
-	//mem_malloc_init (0xa00000, 0x100000);
+    //mem_malloc_init (0xa00000, 0x100000);
 
-	writel(readl(REG_PCLKEN0) | 0x10000, REG_PCLKEN0);   // UART clk
-        writel(readl(REG_PCLKEN0) | 0x100, REG_PCLKEN0);   // Timer clk
+    writel(readl(REG_PCLKEN0) | 0x10000, REG_PCLKEN0);   // UART clk
+    writel(readl(REG_PCLKEN0) | 0x100, REG_PCLKEN0);   // Timer clk
 
-	nuc970_serial_initialize();
-	nuc970_serial_init();
+    nuc970_serial_initialize();
+    nuc970_serial_init();
 
-	printf("nand_boot\n");
+    printf("nand_boot\n");
 
-	nand_boot();
-	//relocate_code(CONFIG_SYS_TEXT_BASE - TOTAL_MALLOC_LEN, NULL,
+    nand_boot();
+    //relocate_code(CONFIG_SYS_TEXT_BASE - TOTAL_MALLOC_LEN, NULL,
                         //CONFIG_SYS_TEXT_BASE);
 }
 

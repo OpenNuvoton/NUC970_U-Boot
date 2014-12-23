@@ -25,6 +25,7 @@ include $(TOPDIR)/config.mk
 
 LIB	:= $(obj)libwatchdog.o
 
+COBJS-$(CONFIG_NUC970_WATCHDOG) += nuc970_wdt.o
 COBJS-$(CONFIG_AT91SAM9_WATCHDOG) += at91sam9_wdt.o
 COBJS-$(CONFIG_FTWDT010_WATCHDOG) += ftwdt010_wdt.o
 ifneq (,$(filter $(SOC), mx31 mx35 mx5 mx6))
