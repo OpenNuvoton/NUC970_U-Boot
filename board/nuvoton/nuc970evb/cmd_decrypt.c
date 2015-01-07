@@ -33,20 +33,6 @@ static void SetTimer(unsigned int count)
 }
 
 #ifdef USE_OTP_KEY
-static int dump_OTP_Key(void)
-{
-	printf("Key 0 : 0x%x\n",readl(0xB800C060));
-	printf("Key 1 : 0x%x\n",readl(0xB800C064));
-	printf("Key 2 : 0x%x\n",readl(0xB800C068));
-	printf("Key 3 : 0x%x\n",readl(0xB800C06C));
-	printf("Key 4 : 0x%x\n",readl(0xB800C070));
-	printf("Key 5 : 0x%x\n",readl(0xB800C074));
-	printf("Key 6 : 0x%x\n",readl(0xB800C078));
-	printf("Key 7 : 0x%x\n",readl(0xB800C07C));
-
-	return 0;
-}
-
 static int otp_init(void)
 {
 	int volatile loop;
@@ -80,7 +66,6 @@ static int otp_init(void)
 				else if (reg & 2)
 				{
 					printf("OTP enabled, and key valid\n");
-					dump_OTP_Key();
 					return 0;
 				}
 			}
@@ -180,44 +165,8 @@ static int do_decrypt_aes(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 			break;
 		}
 	}
-	printf("REG_CRPT_IPSEC_INT_FLAG = 0x%x\n",reg);
-	writel(0x1, REG_CRPT_IPSEC_INT_FLAG);
 
-	printf("Dump AES register\n");
-	reg = readl(REG_CRPT_AES_CTL);
-	printf("CTL : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_IV0);
-	printf("IV0 : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_IV1);
-	printf("IV1 : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_IV2);
-	printf("IV2 : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_IV3);
-	printf("IV3 : 0x%x\n",reg);
-#ifndef USE_OTP_KEY
-	reg = readl(REG_CRPT_AES_KEY0);
-	printf("KEY0 : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_KEY1);
-	printf("KEY1 : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_KEY2);
-	printf("KEY2 : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_KEY3);
-	printf("KEY3 : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_KEY4);
-	printf("KEY4 : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_KEY5);
-	printf("KEY5 : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_KEY6);
-	printf("KEY6 : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_KEY7);
-	printf("KEY7 : 0x%x\n",reg);
-#endif
-	reg = readl(REG_CRPT_AES_SADR);
-	printf("SADR : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_DADR);
-	printf("DADR : 0x%x\n",reg);
-	reg = readl(REG_CRPT_AES_CNT);
-	printf("CNT : 0x%x\n",reg);
+	writel(0x1, REG_CRPT_IPSEC_INT_FLAG);
 
 	return 0;
 }
@@ -290,7 +239,6 @@ static int do_decrypt_program(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 	else
 	{
 		printf("Program OTP Successful!\n");
-		dump_OTP_Key(); 
 	}
 #else
 	printf("USE_OTP_KEY not support!\n");
@@ -313,7 +261,7 @@ int do_decrypt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
         cmd_tbl_t *cp;
 
-	printf("Hello! Decrypt kernel start!\n");
+	printf("Decrypt kernel start!\n");
 
 
         /* drop initial "env" arg */
