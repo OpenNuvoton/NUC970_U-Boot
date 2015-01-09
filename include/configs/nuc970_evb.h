@@ -27,8 +27,6 @@
 #define __CONFIG_H
 
 
-//#define CONFIG_SYS_TEXT_BASE		0xE00000      	/* RAM boot */
-//#define CONFIG_SYS_TEXT_BASE            0x200         /* SPI/NAND boot */
 #define CONFIG_SYS_LOAD_ADDR            0x8000
 #define CONFIG_EXT_CLK	                12000000        /* 12 MHz crystal */
 #define CONFIG_TMR_DIV                  120             /* timer prescaler */  

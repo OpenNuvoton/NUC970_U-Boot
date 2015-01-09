@@ -785,7 +785,8 @@ ucname	= $(shell echo $(1) | sed -e 's/\(.*\)_config/\U\1/')
 ######################################################################
 #nuc970 
 ######################################################################
-nuc970_nand_config:     unconfig
+nuc970_nand_config	\
+nuc970_config:     unconfig
 	@mkdir -p $(obj)include $(obj)board/nuvoton/nuc970evb
 	@mkdir -p $(obj)nand_spl/board/nuvoton/nuc970evb
 	@echo "#define CONFIG_NAND_U_BOOT" > $(obj)include/config.h
