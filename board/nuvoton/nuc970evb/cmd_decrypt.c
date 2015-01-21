@@ -11,8 +11,6 @@
 #include <asm/io.h>
 #include "register.h"
 
-#define USE_OTP_KEY
-
 #define Polling_Loop 0x100000
 
 /* Per the 4 boot mode,rearrange the sequence of key.dat of AES encrypt tool */
@@ -32,14 +30,13 @@ static void SetTimer(unsigned int count)
         writel(0xC000000B, REG_TMR_TCSR0); /* one-shot mode, prescale = 12 */
 }
 
-#ifdef USE_OTP_KEY
 static int otp_init(void)
 {
 	int volatile loop;
 	unsigned int volatile reg;
 	
 	writel(readl(0xB0000004) | 0x10000, 0xB0000004);
-	printf("Unlock OTP...\n");
+	printf("Unlock MTP...\n");
 	writel(readl(REG_PCLKEN1) | (1 << 26), REG_PCLKEN1);
 	writel(0x59, REG_OTP_PROTECT);
 	writel(0x16, REG_OTP_PROTECT);
@@ -47,7 +44,7 @@ static int otp_init(void)
 
 	if (readl(REG_OTP_PROTECT) == 0x1)
 	{
-		printf("OTP is unlocked...\n");
+		printf("MTP is unlocked...\n");
 		writel(readl(REG_OTP_KEYEN) | 0x1, REG_OTP_KEYEN);
 		for (loop = 0; loop < 0x100000; loop++)
 		{
@@ -59,36 +56,32 @@ static int otp_init(void)
 				{
 					if (reg & 4)
 					{
-						printf("OTP enabled, No Key programmed\n");
+						printf("MTP enabled, No Key programmed\n");
 						return 1;
 					}
 				}
 				else if (reg & 2)
 				{
-					printf("OTP enabled, and key valid\n");
+					printf("MTP enabled, and key valid\n");
 					return 0;
 				}
 			}
 		}
 	}
 
-	printf("OTP enable failed, OTP status is 0x%x\n",reg);
+	printf("MTP enable failed, MTP status is 0x%x\n",reg);
 	return -1;
 }
-#endif
 
 static int do_decrypt_aes(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	u32 src, dst, len;
 	u32 volatile reg;
-#ifdef USE_OTP_KEY
 	int ret;
-#endif
 
         if (argc < 3)
                 return CMD_RET_USAGE;
 
-#ifdef USE_OTP_KEY
 	if ((ret = otp_init()) == 0)
 	{	
 		printf("Init crypto engine...\n");
@@ -105,32 +98,9 @@ static int do_decrypt_aes(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 	}
 	else if (ret == 1)
 	{
-		printf("No key programmed, pls program key to OTP\n");
+		printf("No key programmed, pls program key to MTP\n");
 		return 1;
 	}
-#else
-	printf("Init crypto engine...\n");
-
-	/* initial CRYPTO engine */
-	writel(readl(REG_HCLKEN) | 0x800000, REG_HCLKEN);// enable CRYPTO engine clock 
-	writel(0x3, REG_CRPT_IPSEC_INT_EN);
-	writel(0, REG_CRPT_AES_IV0);
-	writel(0, REG_CRPT_AES_IV1);
-	writel(0, REG_CRPT_AES_IV2);
-	writel(0, REG_CRPT_AES_IV3);
-
-	/* use internal key */
-	writel(otp_key[0][0], REG_CRPT_AES_KEY0);
-	writel(otp_key[0][1], REG_CRPT_AES_KEY1);
-	writel(otp_key[0][2], REG_CRPT_AES_KEY2);
-	writel(otp_key[0][3], REG_CRPT_AES_KEY3);
-	writel(otp_key[0][4], REG_CRPT_AES_KEY4);
-	writel(otp_key[0][5], REG_CRPT_AES_KEY5);
-	writel(otp_key[0][6], REG_CRPT_AES_KEY6);
-	writel(otp_key[0][7], REG_CRPT_AES_KEY7);
-
-	writel(0x00C000C9, REG_CRPT_AES_CTL);//internal key
-#endif
 
 	src = simple_strtoul(argv[1], NULL, 0);
 	dst = simple_strtoul(argv[2], NULL, 0);
@@ -147,13 +117,8 @@ static int do_decrypt_aes(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 	/* clear interrupt flag */
 	writel(0x3, REG_CRPT_IPSEC_INT_FLAG);
 
-#ifdef USE_OTP_KEY
 	/* SECURE_AES_CTL_START | SECURE_AES_CTL_EXT_KEY | SECURE_AES_CTL_DMA_EN | SECURE_AES_CTL_DMA_CASCADE */
 	writel(readl(REG_CRPT_AES_CTL) | 0xd1, REG_CRPT_AES_CTL);
-#else
-	/*SECURE_AES_CTL_START|SECURE_AES_CTL_DMA_EN|SECURE_AES_CTL_DMA_CASCADE*/
-	writel(readl(REG_CRPT_AES_CTL) | 0xc1, REG_CRPT_AES_CTL);
-#endif
 
 	SetTimer(1000);
 	while(!(reg = readl(REG_CRPT_IPSEC_INT_FLAG) & 0x3))
@@ -171,8 +136,7 @@ static int do_decrypt_aes(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 	return 0;
 }
 
-#ifdef USE_OTP_KEY
-static int program_otp(u32 key[8]) 
+static int program_otp(u32 key[8], u8 EnSecureBoot) 
 {
 	int  loop;
 	u32 volatile reg;
@@ -190,7 +154,10 @@ static int program_otp(u32 key[8])
 	writel(key[6], REG_OTP_VALUE6);
 	writel(key[7], REG_OTP_VALUE7);
 
-	writel(0xa3, REG_OTP_OPTION);
+	if (EnSecureBoot == 1)
+		writel(5, REG_OTP_OPTION); //AES key and enable secure boot
+	else
+		writel(1, REG_OTP_OPTION); //AES key but disable secure boot
         
 	writel(0x1, REG_OTP_START);
         
@@ -201,48 +168,55 @@ static int program_otp(u32 key[8])
         }
         if (loop >= Polling_Loop)
         {
-                printf("OTP_START not cleared!\n");
+                printf("MTP_START not cleared!\n");
                 return -1;
         }
 
 	if ((reg = readl(REG_OTP_STATUS)) & 0x10) //Program fail
         {
-                printf("OTP key program failed! [0x%x]\n", reg);
+                printf("MTP key program failed! [0x%x]\n", reg);
                 return -1;
         }
         
-        printf("OPT key program OK, COUNT = %d\n",(reg >> 16) & 0xf);
+	printf("MTP option is %d\n",readl(REG_OTP_OPTION));
+        printf("MTP key program OK, COUNT = %d\n",(reg >> 16) & 0xf);
+
 	return 0;
 }
-#endif
+
+/*
+ * Note that before enabling secure boot, you have to burn U-Boot with the same AES key!
+ * Otherwise, your system will be locked!!!
+*/
 
 static int do_decrypt_program(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-#ifdef USE_OTP_KEY
 	volatile int boot_mode;
-#endif
+	u8 EnSecureBoot;
 
-        if (argc < 1)
+        if (argc < 3)
                 return CMD_RET_USAGE;
 
-#ifdef USE_OTP_KEY
 	if (otp_init() < 0)
 		return -1;
+
+	printf("Program AES key to MTP!\n");
+
+	EnSecureBoot = simple_strtoul(argv[2], NULL, 0);
+
+	if (EnSecureBoot == 1)
+		printf("Enable secure boot!\n");
+	else 
+		printf("Disable secure boot!\n");
 
 	boot_mode = readl(0xB0000004) & 0x3;
 	printf("Boot mode is %d\n", boot_mode);
 
-	printf("Program key to OTP\n");
-
-	if (program_otp(otp_key[boot_mode]) < 0)
-		printf("Program OTP Failed!\n");
+	if (program_otp(otp_key[boot_mode], EnSecureBoot) < 0)
+		printf("Program MTP Failed!\n");
 	else
-	{
-		printf("Program OTP Successful!\n");
-	}
-#else
-	printf("USE_OTP_KEY not support!\n");
-#endif
+		printf("Program MTP Successful!\n");
+
 	return 0;
 }
 
@@ -253,15 +227,19 @@ U_BOOT_CMD_MKENT(program, CONFIG_SYS_MAXARGS, 1, do_decrypt_program, "", ""),
 
 static char decrypt_help_text[]=
 "decrypt aes SrcAddr DstAddr Length - Decrypt the image from SrcAddr to DstAddr with lenth [Length].\n"
-"decrypt program - program key to OTP.\n"
-"Example : decrypt aes 0x8000 0x10000 0x200- decrypt the image from 0x8000 to 0x10000 and lenth is 0x200\n";
+"Example : decrypt aes 0x8000 0x10000 0x200- decrypt the image from 0x8000 to 0x10000 and lenth is 0x200\n\n"
+"decrypt program aes EnSecure - program AES key to MTP and [Enable/Disable] secure boot.\n"
+"Example :  decrypt program aes 1 - program AES key to MTP and Enable secure boot.\n"
+"Example :  decrypt program aes 0 - program AES key to MTP but Disable secure boot.\n\n"
+"Note that before enabling secure boot, you have to burn U-Boot with the same AES key!\n"
+"Otherwise, your system will be locked!!!\n";
 
 int do_decrypt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 
         cmd_tbl_t *cp;
 
-	printf("Decrypt kernel start!\n");
+	printf("Decrypt image start!\n");
 
 
         /* drop initial "env" arg */

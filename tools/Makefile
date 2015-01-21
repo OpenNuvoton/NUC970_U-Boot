@@ -98,7 +98,7 @@ NOPED_OBJ_FILES-y += imximage.o
 NOPED_OBJ_FILES-y += omapimage.o
 NOPED_OBJ_FILES-y += mkenvimage.o
 NOPED_OBJ_FILES-y += mkimage.o
-NOPED_OBJ_FILES-y += aes_cw.o
+NOPED_OBJ_FILES-y += aes_fips197.o
 OBJ_FILES-$(CONFIG_SMDK5250) += mkexynosspl.o
 OBJ_FILES-$(CONFIG_MX23) += mxsboot.o
 OBJ_FILES-$(CONFIG_MX28) += mxsboot.o
@@ -221,7 +221,7 @@ $(obj)mkimage$(SFX):	$(obj)aisimage.o \
 			$(obj)os_support.o \
 			$(obj)omapimage.o \
 			$(obj)sha1.o \
-			$(obj)aes_cw.o \
+			$(obj)aes_fips197.o \
 			$(obj)ublimage.o \
 			$(LIBFDT_OBJS)
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^

@@ -24,7 +24,7 @@
 #include "mkimage.h"
 #include <image.h>
 #include <version.h>
-#include <aes_cw.h> /* CWWeng 2014/4/25 */
+#include <aes_fips197.h> /* CWWeng 2014/4/25 */
 
 static void copy_file(int, const char *, int);
 static void usage(void);

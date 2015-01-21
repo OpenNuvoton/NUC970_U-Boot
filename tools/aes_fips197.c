@@ -20,7 +20,7 @@
 
 /* This file is from YCHuang */
 
-#include "aes_cw.h"
+#include "aes_fips197.h"
 
 /* uncomment the following line to run the test suite */
 
