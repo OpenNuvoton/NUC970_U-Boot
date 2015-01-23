@@ -21,6 +21,7 @@
  */
 #include <common.h>
 #include <asm/io.h>
+#include "../../../drivers/gpio/nuc970_gpio.h"
 
 #define REG_SDIC_SIZE0  0xB0001810   
 #define REG_SDIC_SIZE1  0xB0001814  
@@ -52,6 +53,7 @@ int board_early_init_f (void)
 {
     writel(readl(REG_PCLKEN0) | 0x10000, REG_PCLKEN0);   // UART clk
     writel(readl(REG_PCLKEN0) | 0x100, REG_PCLKEN0);   // Timer clk
+    writel(readl(REG_PCLKEN0) | 0x8, REG_PCLKEN0);   // GPIO clk
 
     return 0;
 }
@@ -232,6 +234,24 @@ int board_late_init(void)
 
 #ifdef CONFIG_HW_WATCHDOG
     hw_watchdog_init();
+#endif
+
+#ifdef CONFIG_NUC970_GPIO
+    // Here is a sample that use GPIO driver interface
+    // User can modify it.  
+    // Set GPIO port G0~G5 as 0x101010
+    gpio_request(GPIO_PG0,NULL);
+    gpio_direction_output(GPIO_PG0, 0);
+    gpio_request(GPIO_PG1,NULL);
+    gpio_direction_output(GPIO_PG1, 1);
+    gpio_request(GPIO_PG2,NULL);
+    gpio_direction_output(GPIO_PG2, 0);
+    gpio_request(GPIO_PG3,NULL);
+    gpio_direction_output(GPIO_PG3, 1);
+    gpio_request(GPIO_PG4,NULL);
+    gpio_direction_output(GPIO_PG4, 0);
+    gpio_request(GPIO_PG5,NULL);
+    gpio_direction_output(GPIO_PG5, 1);
 #endif
 
     return 0;

@@ -225,6 +225,8 @@
 #define CONFIG_DOS_PARTITION
 #endif
 
+#define CONFIG_NUC970_GPIO
+
 /*
  * Size of malloc() pool
  */
