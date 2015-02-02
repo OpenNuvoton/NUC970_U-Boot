@@ -53,8 +53,6 @@ void hw_watchdog_reset(void)
     Unlock_RegWriteProtect();
     writel(readl(REG_WDT_CTL) | 1, REG_WDT_CTL);   // Reset WDT up-counter value
     Lock_RegWriteProtect();
-
-    writel(readl((REG_CLKDIVCTL8) & ~0x300) | 0x200, REG_CLKDIVCTL8);   // Set WDT clock source from PCLK/4096
 }
 
 void hw_watchdog_init(void)
