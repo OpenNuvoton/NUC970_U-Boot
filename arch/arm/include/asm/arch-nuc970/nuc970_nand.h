@@ -1,4 +1,4 @@
-/* linux/include/asm/arch/gnand/nuc900_nand.h
+/* linux/include/asm/arch/gnand/nuc970_nand.h
 *
 * Copyright (c) 2008 Nuvoton technology corporation
 * All rights reserved.
