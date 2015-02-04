@@ -138,9 +138,23 @@ static int do_decrypt_aes(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 
 static int program_otp(u32 key[8], u8 EnSecureBoot) 
 {
-	int  loop;
 	u32 volatile reg;
+	int  loop = 0;
+	u8 key_all_zero = 1;
 
+	//Check key if all 0s
+	do {
+		if (key[loop++] != 0) {
+			key_all_zero = 0;
+			break;
+		}
+	} while (loop < 8);
+	
+	if (key_all_zero) {
+		printf("Key invalid! The keys (256 bits) should not be all 0s!\n");
+		return -1;
+	}
+	
 	//Set to program mode
 	writel((readl(REG_OTP_MODE) & 0x3) | 0x2, REG_OTP_MODE);
 	writel(0x60AE, REG_OTP_CYCLE);
