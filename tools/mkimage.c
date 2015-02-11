@@ -29,17 +29,7 @@
 static void copy_file(int, const char *, int);
 static void usage(void);
 
-/* CWWeng 2014/4/30 : add AES_Key */
-u8 otp_key[32] = {0x34,0x12,0x52,0x43,0xc4,0x1a,0x90,0x87,0xa1,0x4c,0xae,0x80,0xc4,0xc3,0x87,0x90,0x67,0x2c,0xa1,0x87,0xd4,0xf7,0x85,0xa1,0x56,0x2f,0xa1,0xc5,0x78,0x56,0x11,0x98};
-
-/*
-u32 otp_key[4][8] = {
-{0x43521234, 0x87901ac4, 0x80ae4ca1, 0x9087c3c4, 0x87a12c67, 0xa185f7d4, 0xc5a12f56, 0x98115678},
-{0xc5a12f56, 0x98115678, 0x43521234, 0x87901ac4, 0x80ae4ca1, 0x9087c3c4, 0x87a12c67, 0xa185f7d4},
-{0x87a12c67, 0xa185f7d4, 0xc5a12f56, 0x98115678, 0x43521234, 0x87901ac4, 0x80ae4ca1, 0x9087c3c4},
-{0x80ae4ca1, 0x9087c3c4, 0x87a12c67, 0xa185f7d4, 0xc5a12f56, 0x98115678, 0x43521234, 0x87901ac4}
-};
-*/
+u8 otp_key[32];
 
 /* image_type_params link list to maintain registered image type supports */
 struct image_type_params *mkimage_tparams = NULL;
@@ -156,6 +146,55 @@ int mkimage_verify_print_header (void *ptr, struct stat *sbuf)
 	return retval;
 }
 
+static void my_atoi(u8 *dest, char src)
+{
+        if ((src >= '0') && (src <= '9'))
+                *dest = src - '0';
+        else if ((src >= 'a') && (src <= 'f'))
+                *dest = 0xa + src - 'a';
+        else if ((src >= 'A') && (src <= 'F'))
+                *dest = 0xA + src - 'A';
+}
+
+static void _read_key(char *cmdname, char *keyfile)
+{
+	int kfd = -1; 
+	char buf[8][11];
+	char buf2[8][8];
+	u8 buf3[8][8];
+	u8 buf4[8][4];
+	int line,n;
+
+        kfd = open (keyfile, O_RDONLY);
+        if (kfd < 0) {
+        	fprintf (stderr, "%s: Can't open %s: %s\n",
+                                cmdname, keyfile,
+                                strerror(errno));
+                exit (EXIT_FAILURE);
+        }
+
+	/* Parsing key */
+        for (line = 0; line < 8; line++)
+                read(kfd, buf[line], 11);
+
+        /* Trim off 0x and '\0' */
+        for (line = 0; line < 8; line++)
+                memcpy(buf2[line], buf[line] + 2, 8);
+
+        /* Translate char to integer */
+        for (line = 0; line < 8; line++)
+                for (n = 0; n < 8; n++)
+                        my_atoi(&buf3[line][n],buf2[line][n]);
+
+        /* Merge every two digits to an integer */
+        for (line = 0; line < 8; line++)
+                for (n = 0; n < 8; n+=2)
+                        buf4[line][n/2] = (buf3[line][n]*16) + buf3[line][n+1];
+
+	/* copy to otp_key[32] */
+	memcpy(otp_key, buf4, 32);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -215,8 +254,15 @@ main (int argc, char **argv)
 			case 'E': /* CWWeng 2014/4/29 add */
 				if ((--argc <= 0) ||  
 					(params.encrypt = 
-					genimg_get_encrpt_id (*++argv)) < 0)
+					genimg_get_encrypt_id (*++argv)) < 0)
 					usage ();
+				goto NXTARG;
+
+			case 'K': /* CWWeng 2015/2/6 add */
+				if (--argc <= 0)
+					usage ();
+				params.keyfile = *++argv;
+				params.kflag = 1;
 				goto NXTARG;
 
 			case 'O':
@@ -346,6 +392,11 @@ NXTARG:		;
 		if (retval != EXIT_SUCCESS)
 			exit (retval);
 	}
+
+	/* CWWeng 2015/2/6 add to read key file */
+	if (params.kflag) 
+		_read_key(params.cmdname, params.keyfile);
+	
 
 	if (params.lflag || params.fflag) {
 		ifd = open (params.imagefile, O_RDONLY|O_BINARY);
@@ -725,10 +776,11 @@ usage ()
 	fprintf (stderr, "Usage: %s -l image\n"
 			 "          -l ==> list image header information\n",
 		params.cmdname);
-	fprintf (stderr, "       %s [-x] -A arch -O os -T type -C comp "
+	fprintf (stderr, "       %s [-x] -A arch -O os -T type -C comp -E encrypt -K keyfile "
 			 "-a addr -e ep -n name -d data_file[:data_file...] image\n"
 			 "          -A ==> set architecture to 'arch'\n"
 			 "          -E ==> set encryption to 'encrypt'\n"
+			 "          -K ==> use key file from 'keyfile'\n"
 			 "          -O ==> set operating system to 'os'\n"
 			 "          -T ==> set image type to 'type'\n"
 			 "          -C ==> set compression type 'comp'\n"

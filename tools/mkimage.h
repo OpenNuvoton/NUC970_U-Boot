@@ -57,6 +57,7 @@ struct mkimage_params {
 	int dflag;
 	int eflag;
 	int fflag;
+	int kflag;
 	int lflag;
 	int vflag;
 	int xflag;
@@ -64,7 +65,7 @@ struct mkimage_params {
 	int os;
 	int arch;
 	int type;
-	int encrypt; /* CWWeng 2014/4/25 add */
+	int encrypt;
 	int comp;
 	char *dtc;
 	unsigned int addr;
@@ -74,6 +75,7 @@ struct mkimage_params {
 	char *datafile;
 	char *imagefile;
 	char *cmdname;
+	char *keyfile;
 };
 
 /*

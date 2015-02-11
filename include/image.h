@@ -334,7 +334,7 @@ int genimg_get_os_id(const char *name);
 int genimg_get_arch_id(const char *name);
 int genimg_get_type_id(const char *name);
 int genimg_get_comp_id(const char *name);
-int genimg_get_encrpt_id(const char *name); 
+int genimg_get_encrypt_id(const char *name); 
 void genimg_print_size(uint32_t size);
 
 #ifndef USE_HOSTCC

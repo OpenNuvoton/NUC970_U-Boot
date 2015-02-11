@@ -165,7 +165,7 @@ static const table_entry_t uimage_comp[] = {
 
 static const table_entry_t uimage_encrypt[] = {
 	{	IH_ENCRPT_NONE,	"none",		"unencrypted",		},
-	{	IH_ENCRPT_AES,	"aes",		"aes encrypt",	},
+	{	IH_ENCRPT_AES,	"aes",		"aes encrypt",		},
 	{	-1,		"",		"",			},
 };
 
@@ -664,7 +664,7 @@ int genimg_get_comp_id(const char *name)
 	return (get_table_entry_id(uimage_comp, "Compression", name));
 }
 
-int genimg_get_encrpt_id(const char *name)
+int genimg_get_encrypt_id(const char *name)
 {
 	return (get_table_entry_id(uimage_encrypt, "Encryption", name));
 }

@@ -226,6 +226,7 @@ $(obj)mkimage$(SFX):	$(obj)aisimage.o \
 			$(LIBFDT_OBJS)
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
+	@cp key.dat $(obj)key.dat
 
 $(obj)mk$(BOARD)spl$(SFX):	$(obj)mkexynosspl.o
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^
