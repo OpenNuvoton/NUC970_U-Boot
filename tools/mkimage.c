@@ -438,7 +438,8 @@ NXTARG:		;
 		if (params.encrypt == IH_ENCRPT_AES) {
 			char ch[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 			lseek(ifd,0,SEEK_END);
-			write(ifd,ch,sbuf.st_size % 16);
+			if (sbuf.st_size % 16)
+				write(ifd,ch, 16 - (sbuf.st_size % 16));
 		}
 
 		ptr = mmap(0, sbuf.st_size, PROT_READ, MAP_SHARED, ifd, 0);
@@ -604,7 +605,8 @@ NXTARG:		;
 	if (params.encrypt == IH_ENCRPT_AES) {
 		char ch[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 		lseek(ifd,0,SEEK_END);
-		write(ifd,ch,sbuf.st_size % 16);
+		if (sbuf.st_size % 16)
+			write(ifd,ch, 16 - (sbuf.st_size % 16));
 	}
 
 	ptr = mmap(0, sbuf.st_size, PROT_READ|PROT_WRITE, MAP_SHARED, ifd, 0);
