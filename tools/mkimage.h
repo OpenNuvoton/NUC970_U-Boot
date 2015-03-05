@@ -66,6 +66,7 @@ struct mkimage_params {
 	int arch;
 	int type;
 	int encrypt;
+	int checksum;
 	int comp;
 	char *dtc;
 	unsigned int addr;

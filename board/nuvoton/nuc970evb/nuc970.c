@@ -53,7 +53,9 @@ int board_early_init_f (void)
 {
     writel(readl(REG_PCLKEN0) | 0x10000, REG_PCLKEN0);   // UART clk
     writel(readl(REG_PCLKEN0) | 0x100, REG_PCLKEN0);   // Timer clk
+#ifdef CONFIG_NUC970_GPIO
     writel(readl(REG_PCLKEN0) | 0x8, REG_PCLKEN0);   // GPIO clk
+#endif
 
     return 0;
 }

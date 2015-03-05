@@ -76,6 +76,10 @@ static const image_header_t *image_get_ramdisk(ulong rd_addr, uint8_t arch,
 
 #include <u-boot/crc.h>
 
+#ifdef CONFIG_NUC970_HW_CHECKSUM
+#include <nuc970_crypto.h>
+#endif
+
 static const table_entry_t uimage_arch[] = {
 	{	IH_ARCH_INVALID,	NULL,		"Invalid ARCH",	},
 	{	IH_ARCH_ALPHA,		"alpha",	"Alpha",	},
@@ -169,6 +173,12 @@ static const table_entry_t uimage_encrypt[] = {
 	{	-1,		"",		"",			},
 };
 
+static const table_entry_t uimage_checksum[] = {
+	{	IH_CHECKSUM_CRC32,	"crc32",	"checksum by crc32",		},
+	{	IH_CHECKSUM_SHA1,	"sha1",		"checksum by sha1",		},
+	{	-1,		"",		"",			},
+};
+
 
 #if defined(CONFIG_TIMESTAMP) || defined(CONFIG_CMD_DATE) || defined(USE_HOSTCC)
 static void genimg_print_time(time_t timestamp);
@@ -196,7 +206,35 @@ int image_check_dcrc(const image_header_t *hdr)
 {
 	ulong data = image_get_data(hdr);
 	ulong len = image_get_data_size(hdr);
+#ifndef CONFIG_NUC970_HW_CHECKSUM
 	ulong dcrc = crc32_wd(0, (unsigned char *)data, len, CHUNKSZ_CRC32);
+#else //use SHA-1
+	ulong dcrc; 
+
+	*(volatile u32 *)REG_HCLKEN |= 0x800000; //Crypto clk
+	SECURE->IPSEC_INT_EN = SECURE_INT_EN_HMAC | SECURE_INT_EN_HMAC_ERR;
+	SECURE->HMAC_CTL |= SECURE_HMAC_IN_TRANSFORM | SECURE_HMAC_OUT_TRANSFORM | SECURE_HMAC_DMA_EN | SECURE_HMAC_LAST;
+	SECURE->HMAC_DMA_CNT = len;
+	SECURE->HMAC_SADR = (UINT32)data;
+	SECURE->HMAC_CTL |= SECURE_HMAC_START; 
+
+	while (1) {
+		if ((unsigned int volatile)(SECURE->IPSEC_INT_FLAG) & SECURE_INT_FLAG_HMAC_DONE ) {
+			SECURE->IPSEC_INT_FLAG = SECURE_INT_FLAG_HMAC_DONE;
+			break;
+		}
+		else if (SECURE->IPSEC_INT_FLAG & SECURE_INT_FLAG_HMAC_ERR) {
+			SECURE->IPSEC_INT_FLAG = SECURE_INT_FLAG_HMAC_ERR;
+			break;
+		}
+	}
+
+	while (SECURE->HMAC_FLAG & SECURE_HMAC_BUSY);
+
+	dcrc = SECURE->HMAC_H0; 
+
+	*(volatile u32 *)REG_HCLKEN &= ~0x800000; //Crypto clk
+#endif
 
 	return (dcrc == image_get_dcrc(hdr));
 }
@@ -667,6 +705,11 @@ int genimg_get_comp_id(const char *name)
 int genimg_get_encrypt_id(const char *name)
 {
 	return (get_table_entry_id(uimage_encrypt, "Encryption", name));
+}
+
+int genimg_get_checksum_id(const char *name)
+{
+	return (get_table_entry_id(uimage_checksum, "Checksum", name));
 }
 
 #ifndef USE_HOSTCC

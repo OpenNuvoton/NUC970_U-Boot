@@ -271,6 +271,14 @@ main (int argc, char **argv)
 					genimg_get_os_id (*++argv)) < 0)
 					usage ();
 				goto NXTARG;
+
+			case 'S': /* CWWeng 2015/3/5 add */
+				if ((--argc <= 0) ||
+					(params.checksum =
+					genimg_get_checksum_id (*++argv)) < 0)
+					usage ();
+				goto NXTARG;
+
 			case 'T':
 				if ((--argc <= 0) ||
 					(params.type =
