@@ -112,6 +112,17 @@
 #ifdef CONFIG_SYS_USE_NANDFLASH
 #define CONFIG_NAND_NUC970
 #define CONFIG_CMD_NAND		1
+#define CONFIG_CMD_UBI         1 
+#define CONFIG_CMD_UBIFS       1 
+#define CONFIG_CMD_MTDPARTS    1 
+#define CONFIG_MTD_DEVICE      1 
+#define CONFIG_MTD_PARTITIONS  1 
+#define CONFIG_RBTREE          1 
+#define CONFIG_LZO             1 
+
+#define MTDIDS_DEFAULT "nand0=nand0"
+#define MTDPARTS_DEFAULT "mtdparts=nand0:0x100000@0x0(u-boot),0x1400000@0x100000(kernel),-(user)"
+#define MTD_ACTIVE_PART "nand0,2"
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_SYS_NAND_BASE	0xB000D000
 #define CONFIG_SYS_NAND_ECCBYTES        12
@@ -232,7 +243,7 @@
 /*
  * Size of malloc() pool
  */
-#define CONFIG_SYS_MALLOC_LEN	ROUND(3 * CONFIG_ENV_SIZE + 128*1024, 0x1000)
+#define CONFIG_SYS_MALLOC_LEN	(1024*1024) //ROUND(3 * CONFIG_ENV_SIZE + 128*1024, 0x1000)
 
 #define CONFIG_STACKSIZE	(32*1024)	/* regular stack */
 
