@@ -47,6 +47,7 @@
 
 #define CONFIG_SYS_USE_SPIFLASH
 #define CONFIG_SYS_USE_NANDFLASH
+#define CONFIG_SYS_NO_FLASH    // that is, no *NOR* flash 
 #define CONFIG_ENV_IS_IN_NAND 
 //#define CONFIG_ENV_IS_IN_SPI_FLASH 
 
@@ -162,7 +163,6 @@
 
 /* SPI flash */
 #ifdef CONFIG_SYS_USE_SPIFLASH
-#define CONFIG_SYS_NO_FLASH     1       //------------>
 #define CONFIG_NUC970_SPI       1
 #define CONFIG_CMD_SPI          1
 #define CONFIG_CMD_SF           1
