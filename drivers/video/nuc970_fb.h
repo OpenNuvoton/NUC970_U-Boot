@@ -78,8 +78,8 @@
 
 #define GPIO_BASE 0xB8003000
 
-#define REG_GPIOH_DIR                   (GPIO_BASE  + 0x54)
-#define REG_GPIOH_DOUT                  (GPIO_BASE  + 0x58)
+#define REG_GPIOG_DIR                   (GPIO_BASE  + 0x180)
+#define REG_GPIOG_DOUT                  (GPIO_BASE  + 0x184)
 
 
 typedef struct

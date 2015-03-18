@@ -238,24 +238,6 @@ int board_late_init(void)
     hw_watchdog_init();
 #endif
 
-#ifdef CONFIG_NUC970_GPIO
-    // Here is a sample that use GPIO driver interface
-    // User can modify it.  
-    // Set GPIO port G0~G5 as 0x101010
-    gpio_request(GPIO_PG0,NULL);
-    gpio_direction_output(GPIO_PG0, 0);
-    gpio_request(GPIO_PG1,NULL);
-    gpio_direction_output(GPIO_PG1, 1);
-    gpio_request(GPIO_PG2,NULL);
-    gpio_direction_output(GPIO_PG2, 0);
-    gpio_request(GPIO_PG3,NULL);
-    gpio_direction_output(GPIO_PG3, 1);
-    gpio_request(GPIO_PG4,NULL);
-    gpio_direction_output(GPIO_PG4, 0);
-    gpio_request(GPIO_PG5,NULL);
-    gpio_direction_output(GPIO_PG5, 1);
-#endif
-
     return 0;
 }
 

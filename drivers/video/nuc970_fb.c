@@ -26,6 +26,7 @@
 #include <lcd.h>
 #include "nuc970_fb.h" 
 
+#define REG_AHBIPRST	0xB0000060
 #define REG_HCLKEN      0xB0000210
 #define REG_CLKDIVCTL0  0xB0000220
 #define REG_CLKDIVCTL1  0xB0000224
@@ -36,10 +37,11 @@
 #define REG_MFP_GPG_L   0xB00000A0
 #define REG_MFP_GPG_H   0xB00000A4
 
+
 vpost_cfg_t vpost_cfg = {
-        .clk            = 5000000,
-        .hight          = 240,
-        .width          = 320,
+        .clk            = 3000000,
+        .hight          = 480,
+        .width          = 800,
         .left_margin    = 4,
         .right_margin   = 12,
         .hsync_len      = 2,
@@ -47,17 +49,17 @@ vpost_cfg_t vpost_cfg = {
         .lower_margin   = 2,
         .vsync_len      = 1,
         .dccs           = 0x0e00040a,//0x0e00041a,
-        .devctl         = 0x060800c0,
-        .fbctrl         = 0x00a000a0,
-        .scale          = 0x04000400,                
+        .devctl         = 0x070000C0,
+        .fbctrl         = 0x03200320,
+        .scale          = 0x04000400,
 };
 
 
 
 vidinfo_t panel_info = {
-        .vl_col         = 320,
-        .vl_row         = 240,
-        .vl_bpix        = 4,  // 2^4 = 16bpp
+        .vl_col         = 800,
+        .vl_row         = 480,
+        .vl_bpix        = 5,  // 2^5 = 32bpp
 };
 
 //int lcd_line_length;  
@@ -74,87 +76,63 @@ short console_row;
 void lcd_enable(void)
 {
         // Turn on back light
-        writel(readl(REG_GPIOH_DOUT) | (1 << 2), REG_GPIOH_DOUT);
-        return;          
+        writel(readl(REG_GPIOG_DOUT) | (1 << 2), REG_GPIOG_DOUT);
+        return;
 }
 
 void lcd_disable(void)
 {
         // Turn off back light
-        writel(readl(REG_GPIOH_DOUT) & ~(1 << 2), REG_GPIOH_DOUT);
-        return;         
+        writel(readl(REG_GPIOG_DOUT) & ~(1 << 2), REG_GPIOG_DOUT);
+        return;
 }
 
 void lcd_ctrl_init(void *lcdbase)
 {
-        int volatile i;
-        int div;
+
+        writel((readl(REG_AHBIPRST) | (1 << 9)), REG_AHBIPRST);
+        writel((readl(REG_AHBIPRST) & ~(1 << 9)), REG_AHBIPRST);
 
         // VPOST clk
-        writel(readl(REG_HCLKEN) | 0x02000000, REG_HCLKEN); // LCD 
-        div = (CONFIG_EXT_CLK / vpost_cfg.clk) - 1;
-        if(div < 0)
-                div = 0;
-        if(div > 0xff)
-                div = 0xff;
+        writel(readl(REG_HCLKEN) | 0x02000000, REG_HCLKEN); // LCD
 
-	div = 9; //CWWeng test
-	//printf("[%s] div = 0x%x\n",__FUNCTION__,div);
+        //writel((readl(REG_CLKDIVCTL1) & ~0x1F) | 0x80, REG_CLKDIVCTL1); // Set VPOST clock source from UCLKOUT
+        writel((readl(REG_CLKDIVCTL1) & ~0x1F) | 0x100, REG_CLKDIVCTL1); // Set VPOST clock source from UCLKOUT
 
-        //writel((readl(REG_CLKDIVCTL1) & ~0x18), REG_CLKDIVCTL1); // Set VPOST clock source from XIN
-        //writel((readl(REG_CLKDIVCTL1) & ~0x18) | (2 << 3), REG_CLKDIVCTL1); // Set VPOST clock source from ACLKOUT
-        writel((readl(REG_CLKDIVCTL1) & ~0x18) | (3 << 3), REG_CLKDIVCTL1); // Set VPOST clock source from UCLKOUT
-        writel((readl(REG_CLKDIVCTL1) & ~0xFF00) | (div << 8), REG_CLKDIVCTL1);
+	//GPG6 (CLK), GPG7 (HSYNC)
+        writel((readl(REG_MFP_GPG_L) & ~0xFF000000) | 0x22000000, REG_MFP_GPG_L); // LCD_CLK LCD_HSYNC
+	//GPG8 (VSYNC), GPG9 (DEN)
+        writel((readl(REG_MFP_GPG_H) & ~0xFF) | 0x22, REG_MFP_GPG_H); // LCD_VSYNC LCD_DEN
 
         // GPIO
         writel(0x22222222, REG_MFP_GPA_L); // LCD_DATA0~7
         writel(0x22222222, REG_MFP_GPA_H); // LCD_DATA8~15
         writel(0x22222222, REG_MFP_GPD_H); // LCD_DATA16~23
-        writel((readl(REG_MFP_GPG_L) & ~0xFF000000) | 0x22000000, REG_MFP_GPG_L); // LCD_CLK LCD_HSYNC
-        writel((readl(REG_MFP_GPG_H) & ~0xFF) | 0x22, REG_MFP_GPG_H); // LCD_VSYNC LCD_DEN
 
-        writel(readl(REG_GPIOH_DIR) | (1 << 2), REG_GPIOH_DIR);
-        writel(readl(REG_GPIOH_DOUT) | (1 << 2), REG_GPIOH_DOUT);
-        
-        // Configure VPOST registers.               
-        writel(0, REG_LCM_DCCS);  // Stop LCD
-        
-        writel(readl(REG_LCM_DCCS) | LCM_DCCS_ENG_RST, REG_LCM_DCCS);  // Reset LCD
-        for(i = 0; i < 0x1000; i++);
-        writel(readl(REG_LCM_DCCS) & (~LCM_DCCS_ENG_RST),REG_LCM_DCCS);
-        for(i = 0; i < 0x1000; i++);
+        writel(readl(REG_GPIOG_DIR) | (1 << 2), REG_GPIOG_DIR);
+        writel(readl(REG_GPIOG_DOUT) | (1 << 2), REG_GPIOG_DOUT);
 
-        writel(0, REG_LCM_DEV_CTRL);
-        
-        /* set frambuffer start phy addr*/
+	//LCD register
+        writel(vpost_cfg.devctl, REG_LCM_DEV_CTRL);  //1677721 color, 24bit
+        writel(0x00000000, REG_LCM_MPU_CMD);
+        writel(0x80000001, REG_LCM_INT_CS);
+
+        writel(0x020d03a0, REG_LCM_CRTC_SIZE);  //800*480
+        writel(0x01e00320, REG_LCM_CRTC_DEND);
+        writel(0x03250321, REG_LCM_CRTC_HR);
+        writel(0x03780348, REG_LCM_CRTC_HSYNC);
+
+        writel(0x01f001ed, REG_LCM_CRTC_VR);
         writel((unsigned int)lcdbase, REG_LCM_VA_BADDR0);
-        //writel((unsigned int)lcdbase, REG_LCM_VA_BADDR1);
-
         writel(vpost_cfg.fbctrl, REG_LCM_VA_FBCTRL);
-        writel(vpost_cfg.scale, REG_LCM_VA_SCALE);        
-        
-        writel(vpost_cfg.devctl, REG_LCM_DEV_CTRL);
-        writel(LCM_CRTC_SIZE_VTTVAL(vpost_cfg.hight + vpost_cfg.upper_margin + vpost_cfg.lower_margin) | 
-               LCM_CRTC_SIZE_HTTVAL(vpost_cfg.width + vpost_cfg.left_margin + vpost_cfg.right_margin), REG_LCM_CRTC_SIZE);
-        writel(LCM_CRTC_DEND_VDENDVAL(vpost_cfg.hight) | LCM_CRTC_DEND_HDENDVAL(vpost_cfg.width), REG_LCM_CRTC_DEND);
-        writel(LCM_CRTC_HR_EVAL(vpost_cfg.width + 5) | LCM_CRTC_HR_SVAL(vpost_cfg.width + 1), REG_LCM_CRTC_HR);
-        writel(LCM_CRTC_HSYNC_EVAL(vpost_cfg.width + vpost_cfg.right_margin + vpost_cfg.hsync_len) |
-               LCM_CRTC_HSYNC_SVAL(vpost_cfg.width + vpost_cfg.right_margin), REG_LCM_CRTC_HSYNC);
-        writel(LCM_CRTC_VR_EVAL(vpost_cfg.hight + vpost_cfg.lower_margin + vpost_cfg.vsync_len) |
-               LCM_CRTC_VR_SVAL(vpost_cfg.hight + vpost_cfg.lower_margin), REG_LCM_CRTC_VR);
 
+        writel(vpost_cfg.scale, REG_LCM_VA_SCALE);
+        writel(0x000107FF, REG_LCM_VA_WIN);
 
-        writel(vpost_cfg.dccs, REG_LCM_DCCS);       
-        
-
-	//printf("REG_CLKDIVCTL0 = 0x%x\n",readl(REG_CLKDIVCTL0));
-	//printf("REG_CLKDIVCTL1 = 0x%x\n",readl(REG_CLKDIVCTL1));
-	//printf("REG_CLKUPLLCON = 0x%x\n",readl(REG_CLKUPLLCON));
-        
+        writel(vpost_cfg.dccs, REG_LCM_DCCS);  //enable vpost, rgb565
 
         return;
 }
-
 
 void lcd_getcolreg (ushort regno, ushort *red, ushort *green, ushort *blue)
 {
