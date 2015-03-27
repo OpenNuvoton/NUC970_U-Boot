@@ -213,23 +213,25 @@ int image_check_dcrc(const image_header_t *hdr)
 
 	*(volatile u32 *)REG_HCLKEN |= 0x800000; //Crypto clk
 	SECURE->IPSEC_INT_EN = SECURE_INT_EN_HMAC | SECURE_INT_EN_HMAC_ERR;
-	SECURE->HMAC_CTL |= SECURE_HMAC_IN_TRANSFORM | SECURE_HMAC_OUT_TRANSFORM | SECURE_HMAC_DMA_EN | SECURE_HMAC_LAST;
 	SECURE->HMAC_DMA_CNT = len;
 	SECURE->HMAC_SADR = (UINT32)data;
-	SECURE->HMAC_CTL |= SECURE_HMAC_START; 
+	udelay(1);
+	SECURE->HMAC_CTL |= SECURE_HMAC_IN_TRANSFORM | SECURE_HMAC_OUT_TRANSFORM | SECURE_HMAC_DMA_EN | SECURE_HMAC_LAST | SECURE_HMAC_START;
 
 	while (1) {
-		if ((unsigned int volatile)(SECURE->IPSEC_INT_FLAG) & SECURE_INT_FLAG_HMAC_DONE ) {
+		volatile unsigned int int_flag;
+		int_flag = (volatile unsigned int)(SECURE->IPSEC_INT_FLAG);
+		if (int_flag & SECURE_INT_FLAG_HMAC_DONE ) {
 			SECURE->IPSEC_INT_FLAG = SECURE_INT_FLAG_HMAC_DONE;
 			break;
 		}
-		else if (SECURE->IPSEC_INT_FLAG & SECURE_INT_FLAG_HMAC_ERR) {
+		else if (int_flag & SECURE_INT_FLAG_HMAC_ERR) {
 			SECURE->IPSEC_INT_FLAG = SECURE_INT_FLAG_HMAC_ERR;
 			break;
 		}
 	}
 
-	while (SECURE->HMAC_FLAG & SECURE_HMAC_BUSY);
+	while ((volatile unsigned int)(SECURE->HMAC_FLAG) & SECURE_HMAC_BUSY);
 
 	dcrc = SECURE->HMAC_H0; 
 
