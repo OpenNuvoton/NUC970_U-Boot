@@ -215,7 +215,7 @@ int image_check_dcrc(const image_header_t *hdr)
 	SECURE->IPSEC_INT_EN = SECURE_INT_EN_HMAC | SECURE_INT_EN_HMAC_ERR;
 	SECURE->HMAC_DMA_CNT = len;
 	SECURE->HMAC_SADR = (UINT32)data;
-	udelay(1);
+	asm volatile("": : :"memory");
 	SECURE->HMAC_CTL |= SECURE_HMAC_IN_TRANSFORM | SECURE_HMAC_OUT_TRANSFORM | SECURE_HMAC_DMA_EN | SECURE_HMAC_LAST | SECURE_HMAC_START;
 
 	while (1) {
