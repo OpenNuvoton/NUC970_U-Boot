@@ -90,6 +90,7 @@
 #define CONFIG_BOOTP_BOOTPATH		1
 #define CONFIG_BOOTP_GATEWAY		1
 #define CONFIG_BOOTP_HOSTNAME		1
+#define CONFIG_BOOTP_SERVERIP /* tftp serverip not overruled by dhcp server */
 
 /*
  * Command line configuration.
