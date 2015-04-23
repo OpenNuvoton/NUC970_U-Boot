@@ -131,7 +131,7 @@
 #define CONFIG_ENV_OFFSET       0x80000
 #define CONFIG_ENV_SIZE         0x10000
 #define CONFIG_ENV_SECT_SIZE    0x20000
-#define ONFIG_ENV_RANGE	        (4 * CONFIG_ENV_SECT_SIZE)  /* Env range : 0x80000 ~ 0x100000 */
+#define CONFIG_ENV_RANGE	        (4 * CONFIG_ENV_SECT_SIZE)  /* Env range : 0x80000 ~ 0x100000 */
 #define CONFIG_ENV_OVERWRITE
 #endif
 #endif
