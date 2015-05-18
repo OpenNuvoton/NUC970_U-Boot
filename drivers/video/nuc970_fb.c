@@ -50,7 +50,7 @@ vpost_cfg_t vpost_cfg = {
         .vsync_len      = 1,
         .dccs           = 0x0e00040a,//0x0e00041a,
         .devctl         = 0x070000C0,
-        .fbctrl         = 0x03200320,
+        .fbctrl         = 0x01900190,//0x03200320,
         .scale          = 0x04000400,
 };
 
@@ -96,8 +96,7 @@ void lcd_ctrl_init(void *lcdbase)
         // VPOST clk
         writel(readl(REG_HCLKEN) | 0x02000000, REG_HCLKEN); // LCD
 
-        //writel((readl(REG_CLKDIVCTL1) & ~0x1F) | 0x80, REG_CLKDIVCTL1); // Set VPOST clock source from UCLKOUT
-        writel((readl(REG_CLKDIVCTL1) & ~0x1F) | 0x100, REG_CLKDIVCTL1); // Set VPOST clock source from UCLKOUT
+        writel((readl(REG_CLKDIVCTL1) & ~0xffff) | 0xe18, REG_CLKDIVCTL1); // Set VPOST clock source from UCLKOUT
 
 	//GPG6 (CLK), GPG7 (HSYNC)
         writel((readl(REG_MFP_GPG_L) & ~0xFF000000) | 0x22000000, REG_MFP_GPG_L); // LCD_CLK LCD_HSYNC
