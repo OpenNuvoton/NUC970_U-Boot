@@ -124,6 +124,9 @@
 #define MTDIDS_DEFAULT "nand0=nand0"
 #define MTDPARTS_DEFAULT "mtdparts=nand0:0x200000@0x0(u-boot),0x1400000@0x200000(kernel),-(user)"
 #define MTD_ACTIVE_PART "nand0,2"
+
+//#define CONFIG_CMD_NAND_YAFFS2 1
+//#define CONFIG_YAFFS2          1
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_SYS_NAND_BASE	0xB000D000
 #define CONFIG_SYS_NAND_ECCBYTES        12
