@@ -28,6 +28,8 @@
 #include <command.h>
 #include <net.h>
 
+extern int NUC970_cleanup(void);
+
 #ifdef CONFIG_CMD_GO
 
 /* Allow ports to override the default behavior */
@@ -49,6 +51,8 @@ static int do_go(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	addr = simple_strtoul(argv[1], NULL, 16);
 
 	printf ("## Starting application at 0x%08lX ...\n", addr);
+
+	NUC970_cleanup();
 
 	/*
 	 * pass address parameter as argv[0] (aka command name),

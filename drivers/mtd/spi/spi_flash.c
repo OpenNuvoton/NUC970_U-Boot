@@ -20,6 +20,10 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+int spi_flash_en_quad_mode(struct spi_flash *flash);
+int spi_flash_disable_quad_mode(void);
+static int _spi_flash_disable_quad_mode(struct spi_flash *flash);
+
 static void spi_flash_addr(u32 addr, u8 *cmd)
 {
 	/* cmd[0] is actual command */
@@ -489,6 +493,83 @@ out:
 	return ret;
 }
 
+static int _spi_flash_disable_quad_mode(struct spi_flash *flash)
+{
+	u8 stat, con, cd;
+	u16 cr;
+	int ret;
+	cd = CMD_WRITE_STATUS;
+	
+	ret = spi_flash_cmd_write_enable(flash);
+	if (ret < 0) {
+		debug("SF: enabling write failed\n");
+		goto out;
+	}
+	
+	ret = spi_flash_cmd(flash->spi, CMD_READ_STATUS, &stat, 1);
+	ret = spi_flash_cmd(flash->spi, CMD_READ_CONFIG, &con, 1);
+	if (ret < 0) {
+		debug("%s: SF: read CR failed\n", __func__);
+		goto out;
+	}
+	/* Byte 1 - status reg, Byte 2 - config reg */
+	cr = ((con & ~0x1 << 1) << 8) | (stat << 0);
+	
+	ret = spi_flash_cmd_write(flash->spi, &cd, 1, &cr, 2);
+	if (ret) {
+		debug("SF: fail to write conf register\n");
+		goto out;
+	}
+	
+	ret = spi_flash_cmd_wait_ready(flash, SPI_FLASH_PROG_TIMEOUT);
+	if (ret < 0) {
+		debug("SF: write conf register timed out\n");
+		goto out;
+	}
+	
+	ret = spi_flash_cmd(flash->spi, CMD_READ_STATUS, &stat, 1);
+	ret = spi_flash_cmd(flash->spi, CMD_READ_CONFIG, &con, 1);
+	if (ret < 0) {
+		debug("%s: SF: read CR failed\n", __func__);
+		goto out;
+	}
+	debug("%s: *** CR = %x\n", __func__, con);
+	
+	ret = spi_flash_cmd_write_disable(flash);
+	if (ret < 0) {
+		debug("SF: disabling write failed\n");
+		goto out;
+	}
+
+out:
+	return ret;
+}
+
+
+int spi_flash_disable_quad_mode(void)
+{
+	struct spi_flash *flash;
+	int ret;
+	struct spi_slave *spi;
+
+	/*
+	 * Load U-Boot image from SPI flash into RAM
+	 */
+
+	flash = spi_flash_probe(0, 0, 1000000, 3); //SPI_MODE_3
+	if (!flash) {
+		puts("SPI probe failed.\n");
+		hang();
+	}
+
+	spi = flash->spi;
+
+	spi_claim_bus(spi);
+	_spi_flash_disable_quad_mode(flash);
+	spi_release_bus(spi);
+
+	return NULL;
+}
 
 #ifdef CONFIG_OF_CONTROL
 int spi_flash_decode_fdt(const void *blob, struct spi_flash *flash)

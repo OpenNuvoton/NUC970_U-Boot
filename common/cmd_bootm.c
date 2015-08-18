@@ -67,6 +67,8 @@ DECLARE_GLOBAL_DATA_PTR;
 #define CONFIG_SYS_BOOTM_LEN	0x800000	/* use 8MByte as default max gunzip size */
 #endif
 
+extern int NUC970_cleanup(void);
+
 #ifdef CONFIG_BZIP2
 extern void bz_internal_error(int);
 #endif
@@ -659,6 +661,8 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	 */
 	usb_stop();
 #endif
+
+	NUC970_cleanup();
 
 	ret = bootm_load_os(images.os, &load_end, 1);
 
