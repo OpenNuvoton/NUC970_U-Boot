@@ -787,7 +787,7 @@ usage ()
 			 "          -l ==> list image header information\n",
 		params.cmdname);
 	fprintf (stderr, "       %s [-x] -A arch -O os -T type -C comp -E encrypt -K keyfile "
-			 "-a addr -e ep -n name -d data_file[:data_file...] image\n"
+			 "-a addr -e ep -S checksum -n name -d data_file[:data_file...] image\n"
 			 "          -A ==> set architecture to 'arch'\n"
 			 "          -E ==> set encryption to 'encrypt'\n"
 			 "          -K ==> use key file from 'keyfile'\n"
@@ -798,6 +798,7 @@ usage ()
 			 "          -e ==> set entry point to 'ep' (hex)\n"
 			 "          -n ==> set image name to 'name'\n"
 			 "          -d ==> use image data from 'datafile'\n"
+			 "          -S ==> set checksum calculation to 'checksum'\n"
 			 "          -x ==> set XIP (execute in place)\n",
 		params.cmdname);
 	fprintf (stderr, "       %s [-D dtc_options] -f fit-image.its fit-image\n",
