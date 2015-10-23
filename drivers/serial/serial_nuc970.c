@@ -85,15 +85,13 @@ int nuc970_serial_init (void)
 void nuc970_serial_putc (const char ch)
 {
 	volatile int loop;
-	while ((UART0->FSR & 0x400)); //waits for TX_FULL bit is clear
+	while ((UART0->FSR & 0x800000)); //waits for TX_FULL bit is clear
 	UART0->x.THR = ch;
 	if(ch == '\n')
 	{
-		for (loop = 0; loop < 1000; loop++);
-		while((UART0->FSR & 0x400)); //waits for TX_FULL bit is clear
+		while((UART0->FSR & 0x800000)); //waits for TX_FULL bit is clear
 		UART0->x.THR = '\r';
 	}
-	for (loop = 0; loop < 100; loop++);
 
 }
 

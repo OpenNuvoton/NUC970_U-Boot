@@ -287,7 +287,8 @@ int spi_flash_cmd_read_quad(struct spi_flash *flash, u32 offset,
 	
 	cmd[0] = CMD_READ_ARRAY_QUAD;
 	for (actual = 0; actual < len; actual += chunk_len) {
-		chunk_len = min(len - actual, page_size - byte_addr);
+		//chunk_len = min(len - actual, page_size - byte_addr);
+		chunk_len = len; //CWWeng 2015.10.21
 		
 		cmd[1] = page_addr >> 8;
 		cmd[2] = page_addr;

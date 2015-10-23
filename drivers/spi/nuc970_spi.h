@@ -60,7 +60,7 @@
 #define SPI_QUAD_EN		0x200000
 #define SPI_DIR_2QM		0x100000
 
-#define SPI_CLK         50000000        // From APB clock
+#define SPI_CLK         75000000        // From APB clock
 
 #define SPI_DUAL_MODE '2'
 #define SPI_QUAD_MODE '4'

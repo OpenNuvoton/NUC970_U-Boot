@@ -215,8 +215,12 @@ int overwrite_console(void)
 
 void enable_caches(void)
 {
-    //icache_enable();
-    //dcache_enable();
+#ifndef CONFIG_SYS_ICACHE_OFF
+    icache_enable();
+#endif
+#ifndef CONFIG_SYS_DCACHE_OFF
+    dcache_enable();
+#endif
 
     return;
 }

@@ -36,6 +36,20 @@
 #define REG_MFP_GPB_H	0xB000007C
 #define REG_MFP_GPG_L	0xB00000A0
 
+static __inline u32 readl_ESwap(u32 addr)
+{
+	volatile u32 reg,val;
+	reg = *(volatile u32 *) (addr);
+	val = ((reg & 0xFF) << 24) | ((reg & 0xFF000000) >> 24) | ((reg & 0xFF00) << 8) | ((reg & 0xFF0000) >> 8);
+	return val;
+}
+
+static __inline void writel_ESwap(u32 val, u32 addr)
+{
+	*(volatile u32 *) (addr) = (((val & 0xFF) << 24) | ((val & 0xFF000000) >> 24) | ((val & 0xFF00) << 8) | ((val & 0xFF0000) >> 8));
+	return val;
+}
+
 void spi_init()
 {
 	return;
@@ -197,17 +211,85 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
     		writel(readl(SPICTL) & ~SPI_QUAD_EN, SPICTL);
     		//printf("QUAD=>(x)(0x%08x)\n", readl(SPICTL));
     	}
-	
-	for (i = 0; i < len; i++) {
-		if(tx)
-			writel(*tx++, SPITX0);
+
+	if (len > 65536) {
+		unsigned char NonAlignLen;
+		//process non-alignment case
+		if ((unsigned int)tx % 4) {
+			writel((readl(SPICTL) & ~0xF8) | 0x40, SPICTL); //set bit length to 8 bits
+			NonAlignLen = 4 - ((unsigned int)tx % 4);
+			for (i = 0; i < NonAlignLen; i++) {
+				writel(*tx++, SPITX0);
 		
-		writel(readl(SPICTL) | SPI_BUSY, SPICTL);
-		while (readl(SPICTL) & SPI_BUSY);
+				writel(readl(SPICTL) | SPI_BUSY, SPICTL);
+				while (readl(SPICTL) & SPI_BUSY);
+			}
+
+			len -= NonAlignLen;
+		}
+		if ((unsigned int)rx % 4) {
+			writel((readl(SPICTL) & ~0xF8) | 0x40, SPICTL); //set bit length to 8 bits
+			NonAlignLen = 4 - ((unsigned int)rx % 4);
+			for (i = 0; i < NonAlignLen; i++) {
+				writel(readl(SPICTL) | SPI_BUSY, SPICTL);
+				while (readl(SPICTL) & SPI_BUSY);
 		
-		if(rx)
-			*rx++ = (unsigned char)readl(SPIRX0);
-	}        
+				*rx++ = (unsigned char)readl(SPIRX0);
+			}
+
+			len -= NonAlignLen;
+		}
+		
+		writel(readl(SPICTL) & ~0xF8, SPICTL); //set bit length to 32 bits
+		writel(readl(SPICTL) | 0x300, SPICTL); //set tx/rx number to 4 (SPI0/1/2/3)
+		for (i = 0; (i+16) <= len; i+=16) {
+			if(tx) {
+				writel_ESwap(*(unsigned int*)tx, SPITX0);
+				writel_ESwap(*(unsigned int*)(tx + 4), SPITX1);
+				writel_ESwap(*(unsigned int*)(tx + 8), SPITX2);
+				writel_ESwap(*(unsigned int*)(tx + 12), SPITX3);
+				tx += 16;
+			}
+		
+			writel(readl(SPICTL) | SPI_BUSY, SPICTL);
+			while (readl(SPICTL) & SPI_BUSY);
+		
+			if(rx) {
+				*(unsigned int*)rx = readl_ESwap(SPIRX0);
+				*(unsigned int*)(rx + 4) = readl_ESwap(SPIRX1);
+				*(unsigned int*)(rx + 8) = readl_ESwap(SPIRX2);
+				*(unsigned int*)(rx + 12) = readl_ESwap(SPIRX3);
+				rx += 16;
+			}
+		}        
+		//process rest bytes
+		if (i < len) {
+			writel((readl(SPICTL) & ~0xF8) | 0x40, SPICTL); //set bit length to 8 bits
+			writel(readl(SPICTL) & ~0x300, SPICTL); //set tx/rx number to 1 (SPI0 only)
+			for (; i < len; i++) {
+				if(tx)
+					writel(*tx++, SPITX0);
+		
+				writel(readl(SPICTL) | SPI_BUSY, SPICTL);
+				while (readl(SPICTL) & SPI_BUSY);
+		
+				if(rx)
+					*rx++ = (unsigned char)readl(SPIRX0);
+			}
+		}
+	}
+	else {
+		for (i = 0; i < len; i++) {
+			if(tx)
+				writel(*tx++, SPITX0);
+		
+			writel(readl(SPICTL) | SPI_BUSY, SPICTL);
+			while (readl(SPICTL) & SPI_BUSY);
+		
+			if(rx)
+				*rx++ = (unsigned char)readl(SPIRX0);
+		}
+	}
 	
 out:
 	if (flags & SPI_XFER_END) {
