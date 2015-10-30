@@ -79,8 +79,8 @@
 #define REG_CLKDIVCTL3             0xB000022C
 #define REG_CLKDIVCTL9             0xB0000244
 
-//#define MMC_CLK                 100000000  /* PLL clk / 2*/
-#define MMC_CLK                 12000000  /* Xin 12M */
+#define MMC_CLK                 300000000  /* UCLKout */
+//#define MMC_CLK                 12000000  /* Xin 12M */
 
 // copy from linux/mmc/core.h
 #define mmc_resp_type(cmd)      ((cmd)->resp_type & (MMC_RSP_PRESENT|MMC_RSP_136|MMC_RSP_CRC|MMC_RSP_BUSY|MMC_RSP_OPCODE))

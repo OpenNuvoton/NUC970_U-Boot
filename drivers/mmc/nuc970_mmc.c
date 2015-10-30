@@ -355,10 +355,15 @@ int nuc970_emmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *
 
 }
 
+// there are 3 bits for divider N0, maximum is 8
+#define SD_CLK_DIV0_MAX     8
+// there are 8 bits for divider N1, maximum is 256
+#define SD_CLK_DIV1_MAX     256
+
 static void nuc970_sd_set_clock(struct mmc *mmc, uint clock)
 {
 
-    uint    div;
+    uint    rate,div0,div1;
 
     if (clock < mmc->f_min)
         clock = mmc->f_min;
@@ -367,17 +372,38 @@ static void nuc970_sd_set_clock(struct mmc *mmc, uint clock)
 
     //printf("clock = %d\n",clock);
 
-    div = MMC_CLK / clock;
-    //printf("MMC_CLK = %d, clock=%d,div=0x%x\n",MMC_CLK,clock,div);
+    rate = MMC_CLK / clock;
+    //printf("MMC_CLK = %d, clock=%d,rate=0x%x\n",MMC_CLK,clock,rate);
+        
+    // choose slower clock if system clock cannot divisible by wanted clock
+    if (MMC_CLK % clock != 0)
+        rate++;
 
-    if((MMC_CLK % clock) == 0)
-        div--;
+    if (rate >= (SD_CLK_DIV0_MAX * SD_CLK_DIV1_MAX)) // the maximum divider for SD_CLK is (SD_CLK_DIV0_MAX * SD_CLK_DIV1_MAX)
+        rate = SD_CLK_DIV0_MAX * SD_CLK_DIV1_MAX;
+
+    for (div0 = SD_CLK_DIV0_MAX; div0 > 0; div0--)    // choose the maximum value if can exact division
+    {
+        if (rate % div0 == 0)
+            break;
+    }
+    if (div0 == 0) // cannot exact division
+    {
+        // if rate <= SD_CLK_DIV1_MAX, set div0 to 1 since div1 can exactly divide input clock
+        div0 = (rate <= SD_CLK_DIV1_MAX) ? 1 : SD_CLK_DIV0_MAX;
+    }
+
+    //--- calculate the second divider CLKDIVCTL3[eMMC_N]
+    div1 = rate / div0;
+    div1 &= 0xFF;
+
 
     //printf("bf set CLKDIV : REG_CLKDIVCTL9 = 0x%x\n",readl(REG_CLKDIVCTL9));
-    writel((readl(REG_CLKDIVCTL9) & ~0x18), REG_CLKDIVCTL9); //Set SDH clock source from XIN
-    writel((readl(REG_CLKDIVCTL9) & ~0xFF00) | (div << 8), REG_CLKDIVCTL9); //Set SDH clock divider
+    writel((readl(REG_CLKDIVCTL9) & ~0x18) | 0x18, REG_CLKDIVCTL9); //Set SDH clock source from UCLKOut
+    writel((readl(REG_CLKDIVCTL9) & ~0x07) | (div0-1), REG_CLKDIVCTL9); //Set SDH source clock divider(SDH_SDIV)
+    writel((readl(REG_CLKDIVCTL9) & ~0xFF00) | ((div1-1) << 8), REG_CLKDIVCTL9); //Set SDH clock divider(SDH_N)
     //printf("af set CLKDIV : REG_CLKDIVCTL9 = 0x%x\n",readl(REG_CLKDIVCTL9));
-    //printf("set div to %d, clock %d\n", div, clock);
+    //printf("set div0 to %d, div1 to %d, clock %d\n", div0, div1, clock);
     //  printf("%x %x %x %x %x\n", readl(REG_CLKEN), readl(REG_CLKEN1), readl(REG_MFSEL), readl(REG_GPIOD_DIR), readl(REG_GPIOD_DATAOUT));
 
     return;
@@ -386,7 +412,7 @@ static void nuc970_sd_set_clock(struct mmc *mmc, uint clock)
 static void nuc970_emmc_set_clock(struct mmc *mmc, uint clock)
 {
 
-    uint    div;
+    uint    rate,div0,div1;
 
     if (clock < mmc->f_min)
         clock = mmc->f_min;
@@ -395,17 +421,38 @@ static void nuc970_emmc_set_clock(struct mmc *mmc, uint clock)
 
     //printf("clock = %d\n",clock);
 
-    div = MMC_CLK / clock;
-    //printf("MMC_CLK = %d, clock=%d,div=0x%x\n",MMC_CLK,clock,div);
+    rate = MMC_CLK / clock;
+    //printf("MMC_CLK = %d, clock=%d,rate=0x%x\n",MMC_CLK,clock,rate);
+        
+    // choose slower clock if system clock cannot divisible by wanted clock
+    if (MMC_CLK % clock != 0)
+        rate++;
 
-    if((MMC_CLK % clock) == 0)
-        div--;
+    if (rate >= (SD_CLK_DIV0_MAX * SD_CLK_DIV1_MAX)) // the maximum divider for SD_CLK is (SD_CLK_DIV0_MAX * SD_CLK_DIV1_MAX)
+        rate = SD_CLK_DIV0_MAX * SD_CLK_DIV1_MAX;
+
+    for (div0 = SD_CLK_DIV0_MAX; div0 > 0; div0--)    // choose the maximum value if can exact division
+    {
+        if (rate % div0 == 0)
+            break;
+    }
+    if (div0 == 0) // cannot exact division
+    {
+        // if rate <= SD_CLK_DIV1_MAX, set div0 to 1 since div1 can exactly divide input clock
+        div0 = (rate <= SD_CLK_DIV1_MAX) ? 1 : SD_CLK_DIV0_MAX;
+    }
+
+    //--- calculate the second divider CLKDIVCTL3[eMMC_N]
+    div1 = rate / div0;
+    div1 &= 0xFF;
+
 
     //printf("bf set CLKDIV : REG_CLKDIVCTL3 = 0x%x\n",readl(REG_CLKDIVCTL3));
-    writel((readl(REG_CLKDIVCTL3) & ~0x18), REG_CLKDIVCTL3); //Set eMMC clock source from XIN
-    writel((readl(REG_CLKDIVCTL3) & ~0xFF00) | (div << 8), REG_CLKDIVCTL3); //Set eMMC clock divider
+    writel((readl(REG_CLKDIVCTL3) & ~0x18) | 0x18, REG_CLKDIVCTL3); //Set eMMC clock source from UCLKOut
+    writel((readl(REG_CLKDIVCTL3) & ~0x07) | (div0-1), REG_CLKDIVCTL3); //Set eMMC source clock divider(eMMC_SDIV)
+    writel((readl(REG_CLKDIVCTL3) & ~0xFF00) | ((div1-1) << 8), REG_CLKDIVCTL3); //Set eMMC clock divider(eMMC_N)
     //printf("af set CLKDIV : REG_CLKDIVCTL3 = 0x%x\n",readl(REG_CLKDIVCTL3));
-    //printf("set div to %d, clock %d\n", div, clock);
+    //printf("set div0 to %d, div1 to %d, clock %d\n", div0, div1, clock);
     //  printf("%x %x %x %x %x\n", readl(REG_CLKEN), readl(REG_CLKEN1), readl(REG_MFSEL), readl(REG_GPIOD_DIR), readl(REG_GPIOD_DATAOUT));
 
     return;
@@ -544,7 +591,7 @@ int nuc970_mmc_init(int priv)
         mmc->set_ios = nuc970_emmc_set_ios;
         mmc->init = _nuc970_emmc_init;
         mmc->f_min = 300000;
-        mmc->f_max = 24000000;
+        mmc->f_max = 20000000;
     }
 
     mmc->voltages = MMC_VDD_33_34 | MMC_VDD_32_33;
