@@ -50,6 +50,7 @@
 #define CONFIG_SYS_NO_FLASH    // that is, no *NOR* flash 
 #define CONFIG_ENV_IS_IN_NAND 
 //#define CONFIG_ENV_IS_IN_SPI_FLASH 
+//#define CONFIG_ENV_IS_IN_MMC
 
 
 #define CONFIG_BOARD_EARLY_INIT_F
@@ -229,6 +230,13 @@
 #define CONFIG_NUC970_SD_PORT0
 #define CONFIG_NUC970_SD_PORT1
 //#define CONFIG_NUC970_EMMC    /* Don't enable eMMC(CONFIG_NUC970_EMMC) and NAND(CONFIG_NAND_NUC970) at the same time! */
+#ifdef CONFIG_ENV_IS_IN_MMC
+#define CONFIG_SYS_MMC_ENV_DEV  2
+#define CONFIG_ENV_OFFSET       0x80000
+#define CONFIG_ENV_SIZE         512
+#define CONFIG_ENV_SECT_SIZE    512
+#define CONFIG_ENV_OVERWRITE
+#endif
 #endif
 
 /* Following block is for EHCI support*/
