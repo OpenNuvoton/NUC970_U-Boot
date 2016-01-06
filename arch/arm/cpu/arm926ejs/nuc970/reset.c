@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012 Nuvoton Technology Corp.
+ *  Copyright (c) 2012~2016 Nuvoton Technology Corp.
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -24,21 +24,17 @@
 #include <asm/io.h>
 
 #define REG_AHBIPRESET       0xB0000060 
-
+#define REG_REGWPCTL       0xB00001FC 
 void reset_cpu(ulong ignored)
 {
-	unsigned int reg;
-	
 	//UnlockReg
-	writel(0x59, 0xB00001fc);
-	writel(0x16, 0xB00001fc);
-	writel(0x88, 0xB00001fc);
+	while(readl(REG_REGWPCTL) != 1) {	
+		writel(0x59, REG_REGWPCTL);
+		writel(0x16, REG_REGWPCTL);
+		writel(0x88, REG_REGWPCTL);
+	}
 
-	reg = readl(REG_AHBIPRESET);
-	reg |= 4;
-	writel(reg, REG_AHBIPRESET);
-
-	//LockReg
-	writel(0, 0xB00001fc);
+	writel(1, REG_AHBIPRESET); //system reset
+	
 }
 
