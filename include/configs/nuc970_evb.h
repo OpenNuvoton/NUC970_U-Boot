@@ -184,7 +184,7 @@
 #define CONFIG_CMD_SF           1
 #define CONFIG_SPI              1
 #define CONFIG_SPI_FLASH        1
-//#define CONFIG_SPI_FLASH_MACRONIX   1
+#define CONFIG_SPI_FLASH_MACRONIX   1
 #define CONFIG_SPI_FLASH_WINBOND   1
 #define CONFIG_SPI_FLASH_EON 1
 #ifdef CONFIG_ENV_IS_IN_SPI_FLASH
