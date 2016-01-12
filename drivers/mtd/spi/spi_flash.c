@@ -22,15 +22,42 @@ DECLARE_GLOBAL_DATA_PTR;
 
 int spi_flash_en_quad_mode(struct spi_flash *flash);
 int spi_flash_disable_quad_mode(void);
+int spi_flash_reset(void);
 static int _spi_flash_disable_quad_mode(struct spi_flash *flash);
 
-static void spi_flash_addr(u32 addr, u8 *cmd)
+static void spi_flash_addr(struct spi_flash *flash, u32 addr, u8 *cmd, u8 *cmd_len)
 {
 	/* cmd[0] is actual command */
-	cmd[1] = addr >> 16;
-	cmd[2] = addr >> 8;
-	cmd[3] = addr >> 0;
+	if (spi_flash_use_4byte_mode(flash)) { 
+		cmd[1] = addr >> 24; 
+		cmd[2] = addr >> 16; 
+		cmd[3] = addr >> 8; 
+		cmd[4] = addr >> 0; 
+		*cmd_len = 5; 
+	} else { 
+		cmd[1] = addr >> 16; 
+		cmd[2] = addr >> 8; 
+		cmd[3] = addr >> 0; 
+		*cmd_len = 4; 
+	}
 }
+
+static void spi_flash_page_addr(struct spi_flash *flash, u32 page_addr, u32 byte_addr, u8 *cmd, u8 *cmd_len) 
+{ 
+	/* cmd[0] is actual command */ 
+	if (spi_flash_use_4byte_mode(flash)) { 
+		cmd[1] = page_addr >> 16; 
+		cmd[2] = page_addr >> 8; 
+		cmd[3] = page_addr >> 0; 
+		cmd[4] = byte_addr; 
+		*cmd_len = 5; 
+	} else { 
+		cmd[1] = page_addr >> 8; 
+		cmd[2] = page_addr >> 0; 
+		cmd[3] = byte_addr; 
+		*cmd_len = 4; 
+	} 
+} 
 
 static int spi_flash_read_write(struct spi_slave *spi,
 				const u8 *cmd, size_t cmd_len,
@@ -111,7 +138,7 @@ int spi_flash_cmd_write_multi(struct spi_flash *flash, u32 offset,
 	unsigned long page_addr, byte_addr, page_size;
 	size_t chunk_len, actual;
 	int ret;
-	u8 cmd[4];
+	u8 cmd[5], cmd_len;
 
 	page_size = flash->page_size;
 	page_addr = offset / page_size;
@@ -130,12 +157,10 @@ int spi_flash_cmd_write_multi(struct spi_flash *flash, u32 offset,
 		if (flash->spi->max_write_size)
 			chunk_len = min(chunk_len, flash->spi->max_write_size);
 
-		cmd[1] = page_addr >> 8;
-		cmd[2] = page_addr;
-		cmd[3] = byte_addr;
+		spi_flash_page_addr(flash, page_addr, byte_addr, cmd, &cmd_len);
 
-		debug("PP: 0x%p => cmd = { 0x%02x 0x%02x%02x%02x } chunk_len = %zu\n",
-		      buf + actual, cmd[0], cmd[1], cmd[2], cmd[3], chunk_len);
+		debug("PP: 0x%p => cmd = { 0x%02x 0x%02x%02x%02x%02x } chunk_len = %zu\n", 
+			buf + actual, cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], chunk_len);
 
 		ret = spi_flash_cmd_write_enable(flash);
 		if (ret < 0) {
@@ -143,7 +168,7 @@ int spi_flash_cmd_write_multi(struct spi_flash *flash, u32 offset,
 			break;
 		}
 
-		ret = spi_flash_cmd_write(flash->spi, cmd, 4,
+		ret = spi_flash_cmd_write(flash->spi, cmd, cmd_len,
 					  buf + actual, chunk_len);
 		if (ret < 0) {
 			debug("SF: write failed\n");
@@ -252,17 +277,18 @@ int spi_flash_read_common(struct spi_flash *flash, const u8 *cmd,
 int spi_flash_cmd_read_fast(struct spi_flash *flash, u32 offset,
 		size_t len, void *data)
 {
-	u8 cmd[5];
+	u8 cmd[6], cmd_len;
 
 	/* Handle memory-mapped SPI */
 	if (flash->memory_map)
 		memcpy(data, flash->memory_map + offset, len);
 
 	cmd[0] = CMD_READ_ARRAY_FAST;
-	spi_flash_addr(offset, cmd);
-	cmd[4] = 0x00;
+	spi_flash_addr(flash, offset, cmd, &cmd_len);  
+        cmd[cmd_len] = 0x00; 
 
-	return spi_flash_read_common(flash, cmd, sizeof(cmd), data, len);
+
+	return spi_flash_read_common(flash, cmd, cmd_len + 1, data, len);
 }
 
 int spi_flash_cmd_read_quad(struct spi_flash *flash, u32 offset,
@@ -366,7 +392,7 @@ int spi_flash_cmd_erase(struct spi_flash *flash, u32 offset, size_t len)
 {
 	u32 start, end, erase_size;
 	int ret;
-	u8 cmd[4];
+	u8 cmd[5], cmd_len;
 
 	erase_size = flash->sector_size;
 	if (offset % erase_size || len % erase_size) {
@@ -389,17 +415,17 @@ int spi_flash_cmd_erase(struct spi_flash *flash, u32 offset, size_t len)
 	end = start + len;
 
 	while (offset < end) {
-		spi_flash_addr(offset, cmd);
+		spi_flash_addr(flash, offset, cmd, &cmd_len);
 		offset += erase_size;
 
-		debug("SF: erase %2x %2x %2x %2x (%x)\n", cmd[0], cmd[1],
-		      cmd[2], cmd[3], offset);
+                debug("SF: erase %2x %2x %2x %2x %2x (%x)\n", cmd[0], cmd[1], 
+			cmd[2], cmd[3], cmd[4], offset);
 
 		ret = spi_flash_cmd_write_enable(flash);
 		if (ret)
 			goto out;
 
-		ret = spi_flash_cmd_write(flash->spi, cmd, sizeof(cmd), NULL, 0);
+		ret = spi_flash_cmd_write(flash->spi, cmd, cmd_len, NULL, 0);
 		if (ret)
 			goto out;
 
@@ -572,6 +598,43 @@ int spi_flash_disable_quad_mode(void)
 	return NULL;
 }
 
+int spi_flash_reset(void)
+{
+	struct spi_flash *flash;
+	int ret;
+	struct spi_slave *spi;
+
+	/*
+	 * Load U-Boot image from SPI flash into RAM
+	 */
+
+	flash = spi_flash_probe(0, 0, 1000000, 3); //SPI_MODE_3
+	if (!flash) {
+		puts("SPI probe failed.\n");
+		hang();
+	}
+
+	spi = flash->spi;
+
+	spi_claim_bus(spi);
+
+	ret = spi_flash_cmd(spi, CMD_RESET_ENABLE, NULL, 0);
+	if (ret) {
+		printf("SF: Failed issue reset command (CMD_RESET_ENABLE)\n");
+	}
+
+	ret = spi_flash_cmd(spi, CMD_RESET_MEMORY, NULL, 0);
+	if (ret) {
+		printf("SF: Failed issue reset command (CMD_RESET_MEMORY)\n");
+	}
+
+	spi_release_bus(spi);
+
+	printf("SF: Device software reset\n");
+	
+	return NULL;
+}
+
 #ifdef CONFIG_OF_CONTROL
 int spi_flash_decode_fdt(const void *blob, struct spi_flash *flash)
 {
@@ -734,6 +797,12 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 	if (flash->memory_map)
 		printf(", mapped at %p", flash->memory_map);
 	puts("\n");
+
+        ret = spi_flash_set_4byte_mode(flash); 
+	if (ret) { 
+		debug("SF: Failed to enable 4 byte mode: %d\n", ret); 
+		goto err_manufacturer_probe; 
+	} 
 
 	spi_release_bus(spi);
 

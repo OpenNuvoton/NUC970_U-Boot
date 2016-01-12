@@ -43,7 +43,7 @@
 #define REG_MFP_GPI_H	0xB00000B4
 
 int NUC970_cleanup(void);
-extern int spi_flash_disable_quad_mode(void);
+extern int spi_flash_reset(void);
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -247,7 +247,7 @@ int NUC970_cleanup(void)
 {
 
 #ifdef CONFIG_SYS_USE_SPIFLASH
-    spi_flash_disable_quad_mode();
+    spi_flash_reset();
 #endif
 
     return 0;
