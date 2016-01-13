@@ -10,6 +10,8 @@
 
 #include "spi_flash_internal.h"
 
+#define EN25XX_EN4B             0xb7    /* Enter 4-byte mode */
+
 struct eon_spi_flash_params {
 	u8 idcode1;
 	u16 nr_sectors;
@@ -39,6 +41,13 @@ static const struct eon_spi_flash_params eon_spi_flash_table[] = {
 	},
 };
 
+static __maybe_unused int eon_set_4byte_mode(struct spi_flash *flash)  
+{  
+        struct spi_slave *spi = flash->spi;  
+
+        return spi_flash_cmd(spi, EN25XX_EN4B, NULL, 0);  
+} 
+
 struct spi_flash *spi_flash_probe_eon(struct spi_slave *spi, u8 *idcode)
 {
 	const struct eon_spi_flash_params *params;
@@ -66,6 +75,9 @@ struct spi_flash *spi_flash_probe_eon(struct spi_slave *spi, u8 *idcode)
 	flash->sector_size = 256 * 16 * 16;
 	flash->size = 256 * 16
 	    * params->nr_sectors;
+
+        if (flash->size > (1 << 24))
+                flash->set_4byte_mode = eon_set_4byte_mode;  
 
 	return flash;
 }

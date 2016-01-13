@@ -10,6 +10,8 @@
 
 #include "spi_flash_internal.h"
 
+#define W25XX_EN4B             0xb7    /* Enter 4-byte mode */
+
 struct winbond_spi_flash_params {
 	uint16_t	id;
 	uint16_t	nr_blocks;
@@ -84,6 +86,13 @@ static const struct winbond_spi_flash_params winbond_spi_flash_table[] = {
 	},
 };
 
+static __maybe_unused int winbond_set_4byte_mode(struct spi_flash *flash)
+{
+        struct spi_slave *spi = flash->spi;
+
+        return spi_flash_cmd(spi, W25XX_EN4B, NULL, 0);
+}
+
 struct spi_flash *spi_flash_probe_winbond(struct spi_slave *spi, u8 *idcode)
 {
 	const struct winbond_spi_flash_params *params;
@@ -111,6 +120,10 @@ struct spi_flash *spi_flash_probe_winbond(struct spi_slave *spi, u8 *idcode)
 	flash->page_size = 256;
 	flash->sector_size = 4096;
 	flash->size = 4096 * 16 * params->nr_blocks;
+
+        if (flash->size > (1 << 24))
+                flash->set_4byte_mode = winbond_set_4byte_mode;
+	
 
 	return flash;
 }

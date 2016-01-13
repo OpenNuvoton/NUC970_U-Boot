@@ -31,6 +31,8 @@
 #define CMD_ERASE_64K			0xd8
 #define CMD_ERASE_CHIP			0xc7
 
+#define CMD_RESET_ENABLE 	0x66
+#define CMD_RESET_MEMORY 	0x99
 
 /* Common status */
 #define STATUS_WIP			0x01
@@ -100,6 +102,19 @@ int spi_flash_cmd_wait_ready(struct spi_flash *flash, unsigned long timeout);
 
 /* Erase sectors. */
 int spi_flash_cmd_erase(struct spi_flash *flash, u32 offset, size_t len);
+
+static inline int spi_flash_use_4byte_mode(struct spi_flash *flash)
+{
+	return NULL != flash->set_4byte_mode;
+}
+
+static inline int spi_flash_set_4byte_mode(struct spi_flash *flash)
+{
+	if (spi_flash_use_4byte_mode(flash)) 
+		return flash->set_4byte_mode(flash);
+
+	return 0;
+} 
 
 /* Manufacturer-specific probe functions */
 struct spi_flash *spi_flash_probe_spansion(struct spi_slave *spi, u8 *idcode);
