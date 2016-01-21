@@ -43,13 +43,13 @@
 
 #define CONFIG_CMD_TIMER
 
-//#define CONFIG_NUC970_HW_CHECKSUM
+#define CONFIG_NUC970_HW_CHECKSUM
 
 #define CONFIG_SYS_USE_SPIFLASH
-#define CONFIG_SYS_USE_NANDFLASH
+//#define CONFIG_SYS_USE_NANDFLASH
 #define CONFIG_SYS_NO_FLASH    // that is, no *NOR* flash 
-#define CONFIG_ENV_IS_IN_NAND 
-//#define CONFIG_ENV_IS_IN_SPI_FLASH 
+//#define CONFIG_ENV_IS_IN_NAND 
+#define CONFIG_ENV_IS_IN_SPI_FLASH 
 //#define CONFIG_ENV_IS_IN_MMC
 
 
@@ -61,7 +61,7 @@
 
 #define CONFIG_DISPLAY_CPUINFO
 
-#define CONFIG_BOOTDELAY	3
+#define CONFIG_BOOTDELAY	0
 
 #define CONFIG_SYS_SDRAM_BASE   0
 #define CONFIG_NR_DRAM_BANKS    2     // there are 2 sdram banks for nuc970
@@ -70,6 +70,7 @@
 #define CONFIG_BAUDRATE         115200
 #define CONFIG_SYS_BAUDRATE_TABLE       {115200, 57600, 38400}
 
+#if 1
 #define CONFIG_NUC970_EMAC0
 //#define CONFIG_NUC970_EMAC1
 #define CONFIG_CMD_NET		
@@ -77,6 +78,7 @@
 #define CONFIG_NUC970_PHY_ADDR          1
 #define CONFIG_ETHADDR                  00:00:00:11:66:88
 #define CONFIG_SYS_RX_ETH_BUFFER        16 // default is 4, set to 16 here.
+#endif
 #define CONFIG_NUC970_CONSOLE
 
 //#undef CONFIG_SYS_ICACHE_OFF
@@ -84,6 +86,7 @@
 //#define CONFIG_SYS_ICACHE_OFF
 #define CONFIG_SYS_DCACHE_OFF
 
+#if 0
 /*
  * BOOTP options
  */
@@ -92,18 +95,24 @@
 #define CONFIG_BOOTP_GATEWAY		1
 #define CONFIG_BOOTP_HOSTNAME		1
 #define CONFIG_BOOTP_SERVERIP /* tftp serverip not overruled by dhcp server */
+#endif
 
 /*
  * Command line configuration.
  */
-#include <config_cmd_default.h>
+//#include <config_cmd_default.h>
+//#define CONFIG_CMD_BOOTM    //CWWeng 2015/4/30
+//#define CONFIG_CMD_GO    //CWWeng 2015/4/30
+#define CONFIG_CMD_SAVEENV //CWWeng 2015/12/24
 
 #undef CONFIG_CMD_LOADS
 #undef CONFIG_CMD_SOURCE
 
+#if 0
 #define CONFIG_CMD_PING		1
 #define CONFIG_CMD_DHCP		1
 #define CONFIG_CMD_JFFS2        1
+#endif
 
 
 #ifdef CONFIG_SYS_USE_SPIFLASH
@@ -180,11 +189,11 @@
 /* SPI flash */
 #ifdef CONFIG_SYS_USE_SPIFLASH
 #define CONFIG_NUC970_SPI       1
-#define CONFIG_CMD_SPI          1
+//#define CONFIG_CMD_SPI          1
 #define CONFIG_CMD_SF           1
 #define CONFIG_SPI              1
 #define CONFIG_SPI_FLASH        1
-#define CONFIG_SPI_FLASH_MACRONIX   1
+//#define CONFIG_SPI_FLASH_MACRONIX   1
 #define CONFIG_SPI_FLASH_WINBOND   1
 #define CONFIG_SPI_FLASH_EON 1
 #ifdef CONFIG_ENV_IS_IN_SPI_FLASH
@@ -200,10 +209,10 @@
 #define CONFIG_SYS_CBSIZE		256
 #define CONFIG_SYS_MAXARGS		16
 #define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
-#define CONFIG_SYS_LONGHELP		1
-#define CONFIG_CMDLINE_EDITING		1
-#define CONFIG_AUTO_COMPLETE
-#define CONFIG_SYS_HUSH_PARSER
+//#define CONFIG_SYS_LONGHELP		1
+//#define CONFIG_CMDLINE_EDITING		1
+//#define CONFIG_AUTO_COMPLETE
+//#define CONFIG_SYS_HUSH_PARSER
 #define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 
 /* Following block is for LCD support */
@@ -228,7 +237,7 @@
 #define CONFIG_DOS_PARTITION
 //#define CONFIG_MMC_TRACE
 #define CONFIG_NUC970_SD_PORT0
-//#define CONFIG_NUC970_SD_PORT1
+#define CONFIG_NUC970_SD_PORT1
 //#define CONFIG_NUC970_EMMC    /* Don't enable eMMC(CONFIG_NUC970_EMMC) and NAND(CONFIG_NAND_NUC970) at the same time! */
 #ifdef CONFIG_ENV_IS_IN_MMC
 #define CONFIG_SYS_MMC_ENV_DEV  2
@@ -240,7 +249,7 @@
 #endif
 
 /* Following block is for EHCI support*/
-#if 1
+#if 0
 #define CONFIG_CMD_USB
 #define CONFIG_CMD_FAT
 #define CONFIG_USB_STORAGE
@@ -250,7 +259,7 @@
 #define CONFIG_DOS_PARTITION
 #endif
 
-#define CONFIG_NUC970_GPIO
+//#define CONFIG_NUC970_GPIO
 
 /*
  * Size of malloc() pool
@@ -258,5 +267,9 @@
 #define CONFIG_SYS_MALLOC_LEN	(1024*1024) //ROUND(3 * CONFIG_ENV_SIZE + 128*1024, 0x1000)
 
 #define CONFIG_STACKSIZE	(32*1024)	/* regular stack */
+
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"uimage=970image.sha\0" \
+	"bootcmd=fatload mmc 0 0x7fc0 ${uimage}; bootm 0x7fc0\0" \
 
 #endif
