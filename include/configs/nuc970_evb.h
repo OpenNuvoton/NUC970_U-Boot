@@ -210,6 +210,7 @@
 #if 0
 #define CONFIG_LCD
 #define CONFIG_NUC970_LCD
+//#define CONFIG_NUC977_LCD
 #define LCD_BPP                         LCD_COLOR16
 #define CONFIG_LCD_LOGO
 #define CONFIG_LCD_INFO

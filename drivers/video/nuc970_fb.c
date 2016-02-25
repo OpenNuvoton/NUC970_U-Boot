@@ -49,7 +49,11 @@ vpost_cfg_t vpost_cfg = {
         .lower_margin   = 2,
         .vsync_len      = 1,
         .dccs           = 0x0e00040a,//0x0e00041a,
+#ifdef CONFIG_NUC970_LCD
         .devctl         = 0x070000C0,
+#else
+        .devctl         = 0x050000C0,
+#endif
         .fbctrl         = 0x01900190,//0x03200320,
         .scale          = 0x04000400,
 };
@@ -59,7 +63,7 @@ vpost_cfg_t vpost_cfg = {
 vidinfo_t panel_info = {
         .vl_col         = 800,
         .vl_row         = 480,
-        .vl_bpix        = 5,  // 2^5 = 32bpp
+        .vl_bpix        = 4,  // 2^5 = 32bpp
 };
 
 //int lcd_line_length;  
