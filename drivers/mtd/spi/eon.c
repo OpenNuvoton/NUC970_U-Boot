@@ -25,6 +25,11 @@ static const struct eon_spi_flash_params eon_spi_flash_table[] = {
 		.name = "EN25Q32B",
 	},
 	{
+		.idcode1 = 0x17,
+		.nr_sectors = 2048,
+		.name = "EN25Q64",
+	},
+	{
 		.idcode1 = 0x18,
 		.nr_sectors = 4096,
 		.name = "EN25Q128",
