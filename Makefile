@@ -802,7 +802,7 @@ nuc970_nonand_config:     unconfig
 
 nuc970_tomato_config:     unconfig
 	@mkdir -p $(obj)include $(obj)board/nuvoton/nuc970evb
-	@echo "RAM_TEXT = 0xE00000" >> $(obj)board/nuvoton/nuc970evb/config.tmp
+	@echo "RAM_TEXT = 0x2000000" >> $(obj)board/nuvoton/nuc970evb/config.tmp
 	@$(MKCONFIG) nuc970_tomato arm arm926ejs nuc970evb nuvoton nuc970
 
 

@@ -31,12 +31,17 @@
 #define REG_WDT_CTL	0xB8001800
 #define REG_MFP_GPA_L	0xB0000070
 #define REG_MFP_GPA_H	0xB0000074
+#define REG_MFP_GPB_L	0xB0000078
+#define REG_MFP_GPB_H	0xB000007C
 #define REG_MFP_GPC_L	0xB0000080
+#define REG_MFP_GPC_H	0xB0000084
 #define REG_MFP_GPD_L	0xB0000088
 #define REG_MFP_GPE_L	0xB0000090
 #define REG_MFP_GPE_H	0xB0000094
 #define REG_MFP_GPF_L	0xB0000098
 #define REG_MFP_GPF_H	0xB000009C
+#define REG_MFP_GPG_L	0xB00000A0
+#define REG_MFP_GPG_H	0xB00000A4
 #define REG_MFP_GPH_L	0xB00000A8
 #define REG_MFP_GPH_H	0xB00000AC
 #define REG_MFP_GPI_L	0xB00000B0
@@ -249,6 +254,23 @@ int NUC970_cleanup(void)
 #ifdef CONFIG_SYS_USE_SPIFLASH
     spi_flash_reset();
 #endif
+
+    //Reset multi-function pins to GPIO, except GPA0~15,GPD8~15,GPG6~9 for LCD
+    writel(0, REG_MFP_GPB_L);   
+    writel(0, REG_MFP_GPB_H);   
+    writel(0, REG_MFP_GPC_L);   
+    writel(0, REG_MFP_GPC_H);   
+    writel(0, REG_MFP_GPD_L);   
+    writel(0, REG_MFP_GPE_L);
+    writel(0, REG_MFP_GPE_H);   
+    writel(0, REG_MFP_GPF_L);   
+    writel(0, REG_MFP_GPF_H);   
+    writel((readl(REG_MFP_GPG_L) & ~0x00FFFFFF), REG_MFP_GPG_L);
+    writel((readl(REG_MFP_GPG_H) & ~0xFFFFFF00), REG_MFP_GPG_H);
+    writel(0, REG_MFP_GPH_L);   
+    writel(0, REG_MFP_GPH_H);   
+    writel(0, REG_MFP_GPI_L);   
+    writel(0, REG_MFP_GPI_H);   
 
     return 0;
 }
