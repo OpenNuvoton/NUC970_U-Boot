@@ -70,6 +70,7 @@
 #define CRC_16          0x08
 #define SDDAT0          0x80
 #define RITO_IF         0x1000
+#define DITO_IF         0x2000
 #define REG_SDRSP0              (SDH_BA+0x830)   /* SD receive response token register 0 */
 #define REG_SDRSP1              (SDH_BA+0x834)   /* SD receive response token register 1 */
 #define REG_SDBLEN              (SDH_BA+0x838)   /* SD block length register */
