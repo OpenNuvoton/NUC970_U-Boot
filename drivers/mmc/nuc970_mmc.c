@@ -89,8 +89,10 @@ int nuc970_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *da
 
     if((readl(REG_SDCSR) & 0xF) != 0)
         if(nuc970_sd_check_ready_busy() < 0)
-            return(TIMEOUT);
-
+		{
+	        if ((readl(REG_SDISR) & SDDAT0) == 0)
+            	return(TIMEOUT);
+		}
 
     if(mmc_resp_type(cmd) != MMC_RSP_NONE) {
         if(mmc_resp_type(cmd) == MMC_RSP_R2) {
@@ -108,7 +110,7 @@ int nuc970_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *da
     else if (mmc->priv == 1) // SD port 1
         sdcsr = (sdcsr & ~0x60000000) | 0x20000000;                    // Select port 1
 
-    sdcsr |= 0x01010000;                    // Set SDNWR and BLK_CNT to 1, update later
+    sdcsr |= 0x09010000;                    // Set SDNWR and BLK_CNT to 1, update later
     sdcsr |= (cmd->cmdidx << 8) | CO_EN;
 
     if (data) {
@@ -118,15 +120,17 @@ int nuc970_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *da
         //printf("size %d len %d\n", block_length, blocks);
         writel(block_length - 1, REG_SDBLEN);
 
-        if (block_length == 0x200) {
+        if (block_length <= 0x200) {
             if (blocks < 256)
-                sdcsr |= (blocks << 16);
-            else
-                printf("NUC970 SD Max block transfer is 255!!\n");
-        }
+	          	sdcsr |= (blocks << 16);
+	        else
+    	        printf("NUC970 SD Max block transfer is 255!!\n");
+    	}
         //printf("sdcsr 0x%x \n", sdcsr);
 
         if (data->flags == MMC_DATA_READ) {
+			writel(DITO_IF, REG_SDISR);
+			writel(0xFFFFFF, REG_SDTMOUT);
             sdcsr |= DI_EN;
             writel((unsigned int)data->dest, REG_DMACSAR2);
 
@@ -141,14 +145,11 @@ int nuc970_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *da
         blocks = 0;
     }
 
-
     writel(cmd->cmdarg, REG_SDARG);
     //printf("arg: %x\n", cmd->cmdarg);
     writel(sdcsr, REG_SDCSR);
 
     while (readl(REG_SDCSR) & CO_EN); //wait 'til command out complete
-
-
 
     if(mmc_resp_type(cmd) != MMC_RSP_NONE) {
         if(mmc_resp_type(cmd) == MMC_RSP_R2) {
@@ -249,7 +250,7 @@ int nuc970_emmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *
         writel(0xFFFF, REG_EMMCTOUT);
     }
 
-    emmcctl |= 0x01010000;                    // Set SDNWR and BLK_CNT to 1, update later
+    emmcctl |= 0x09010000;                    // Set SDNWR and BLK_CNT to 1, update later
     emmcctl |= (cmd->cmdidx << 8) | CO_EN;
 
     if (data) {
@@ -259,7 +260,7 @@ int nuc970_emmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *
         //printf("size %d len %d\n", block_length, blocks);
         writel(block_length - 1, REG_EMMCBLEN);
 
-        if (block_length == 0x200) {
+        if (block_length <= 0x200) {
             if (blocks < 256)
                 emmcctl |= (blocks << 16);
             else
@@ -584,7 +585,7 @@ int nuc970_mmc_init(int priv)
         mmc->set_ios = nuc970_sd_set_ios;
         mmc->init = _nuc970_sd_init;
         mmc->f_min = 400000;
-        mmc->f_max = 20000000;
+        mmc->f_max = 50000000;
     }
     else if (priv == 2) { //eMMC
         mmc->send_cmd = nuc970_emmc_send_cmd;
@@ -594,7 +595,7 @@ int nuc970_mmc_init(int priv)
         mmc->f_max = 20000000;
     }
 
-    mmc->voltages = MMC_VDD_33_34 | MMC_VDD_32_33;
+    mmc->voltages = MMC_VDD_33_34 | MMC_VDD_32_33| MMC_VDD_31_32| MMC_VDD_30_31| MMC_VDD_29_30| MMC_VDD_28_29| MMC_VDD_27_28;
     mmc->host_caps = MMC_MODE_4BIT | MMC_MODE_HS | MMC_MODE_HC;
 
     //mmc->b_max = 0;
