@@ -79,6 +79,8 @@
 #define CONFIG_SYS_RX_ETH_BUFFER        16 // default is 4, set to 16 here.
 #define CONFIG_NUC970_CONSOLE
 
+//#define CONFIG_KPI_NUC970
+
 //#undef CONFIG_SYS_ICACHE_OFF
 //#undef CONFIG_SYS_DCACHE_OFF
 //#define CONFIG_SYS_ICACHE_OFF
@@ -109,6 +111,14 @@
 #ifdef CONFIG_SYS_USE_SPIFLASH
 #undef CONFIG_CMD_IMLS  //====================> SPI only
 #undef CONFIG_CMD_JFFS2
+#endif
+
+#ifdef CONFIG_KPI_NUC970
+//#define CONFIG_KPI_PA_PORT   1    // KPI select PA port
+#define CONFIG_KPI_PH_PORT   1  // KPI select PH port
+#define CONFIG_KPI_ROW_NUM   3  // row number is 1~4
+#define CONFIG_KPI_COL_NUM   3  // col number is 1~8
+#define CONFIG_KPI_DEBOUNCE  8  // debounce length setting: 0~13
 #endif
 
 #ifdef CONFIG_SYS_USE_NANDFLASH

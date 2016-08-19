@@ -21,6 +21,7 @@
  */
 #include <common.h>
 #include <asm/io.h>
+#include <nuc970_keypad.h>
 #include "../../../drivers/gpio/nuc970_gpio.h"
 
 #define REG_SDIC_SIZE0  0xB0001810   
@@ -250,6 +251,10 @@ int board_late_init(void)
 
 int NUC970_cleanup(void)
 {
+
+#ifdef CONFIG_KPI_NUC970
+    nuc970_KPI_close();
+#endif
 
 #ifdef CONFIG_SYS_USE_SPIFLASH
     spi_flash_reset();

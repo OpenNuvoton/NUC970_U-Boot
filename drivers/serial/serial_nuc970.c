@@ -28,6 +28,8 @@
 
 //#include "serial_nuc970.h"
 #include <asm/arch/serial_nuc970.h>
+#include <nuc970_keypad.h>
+
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -100,6 +102,57 @@ void nuc970_serial_puts (const char *s)
 	}
 }
 
+
+#ifdef CONFIG_KPI_NUC970
+
+unsigned int u32KPI_value = 0;
+unsigned int u32Pre_KPI_value = 0;
+
+
+int nuc970_serial_and_kpi_getc (void)
+{
+	int i;
+
+	while (1)
+	{
+		for(i=0;i<0x1000;i++);
+		if (!(UART0->FSR & (1 << 14)))
+		{
+			return (UART0->x.RBR);
+		}
+
+        u32KPI_value = nuc970_KPI_Read();
+	    if((u32KPI_value > 0) && (u32KPI_value < 33))
+	    {
+        	if(u32Pre_KPI_value != u32KPI_value)
+            {
+                u32Pre_KPI_value = u32KPI_value;
+
+		    	if(u32KPI_value == KEY_P_ROW0_COL0)
+ 			    	return (0x31);
+		    	if(u32KPI_value == KEY_P_ROW0_COL1)
+ 			    	return (0x32);
+            }
+
+	    }
+	    else if(u32KPI_value >= 33)
+	    {
+	        if(u32Pre_KPI_value != u32KPI_value)
+            {
+                u32Pre_KPI_value = u32KPI_value;
+
+		    	if(u32KPI_value == KEY_R_ROW0_COL0)
+ 			    	return (0x33);
+		    	if(u32KPI_value == KEY_R_ROW0_COL1)
+ 			    	return (0x34);
+            }
+			
+	    }
+
+	}
+
+}
+#else
 int nuc970_serial_getc (void)
 {
 	while (1)
@@ -110,6 +163,7 @@ int nuc970_serial_getc (void)
 		}
 	}
 }
+#endif
 
 int nuc970_serial_tstc (void)
 {
@@ -129,7 +183,11 @@ static struct serial_device nuc970_serial_drv = {
         .setbrg = nuc970_serial_setbrg,
         .putc   = nuc970_serial_putc,
         .puts   = nuc970_serial_puts,
+        #ifdef CONFIG_KPI_NUC970
+        .getc   = nuc970_serial_and_kpi_getc,
+		#else
         .getc   = nuc970_serial_getc,
+        #endif
         .tstc   = nuc970_serial_tstc,
 };
 

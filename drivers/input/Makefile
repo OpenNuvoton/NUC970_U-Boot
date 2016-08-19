@@ -34,6 +34,8 @@ endif
 COBJS-y += input.o
 COBJS-$(CONFIG_OF_CONTROL) += key_matrix.o
 
+COBJS-$(CONFIG_KPI_NUC970) += nuc970_keypad.o
+
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
