@@ -148,8 +148,6 @@
 #endif
 
 #define CONFIG_SYS_NAND_U_BOOT_OFFS     0x100000   /* Offset to RAM U-Boot image */
-/* total memory available to uboot */
-#define CONFIG_SYS_UBOOT_SIZE           (1024 * 1024)
 
 #ifdef CONFIG_NAND_SPL
 /* base address for uboot */
