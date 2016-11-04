@@ -6,8 +6,8 @@ enum {
 };
 
 typedef struct bitmap_s {		/* bitmap description */
-	uint16_t width;
-	uint16_t height;
+	uint32_t width;
+	uint32_t height;
 	uint8_t	palette[256*3];
 	uint8_t	*data;
 } bitmap_t;
@@ -22,13 +22,15 @@ void usage(const char *prog)
 /*
  * Neutralize little endians.
  */
-uint16_t le_short(uint16_t x)
+uint32_t le_short(uint32_t x)
 {
-    uint16_t val;
+    uint32_t val;
     uint8_t *p = (uint8_t *)(&x);
 
     val =  (*p++ & 0xff) << 0;
-    val |= (*p & 0xff) << 8;
+    val |= (*p++ & 0xff) << 8;
+    val |= (*p++ & 0xff) << 16;
+    val |= (*p++ & 0xff) << 24;
 
     return val;
 }
@@ -76,8 +78,9 @@ int main (int argc, char *argv[])
 	FILE	*fp;
 	bitmap_t bmp;
 	bitmap_t *b = &bmp;
-	uint16_t data_offset, n_colors;
-
+	uint32_t data_offset, n_colors;
+    int skipByte;
+    
 	if (argc < 3) {
 		usage(argv[0]);
 		exit (EXIT_FAILURE);
@@ -106,18 +109,18 @@ int main (int argc, char *argv[])
 	 * ignore the rest
 	 */
 	skip_bytes (fp, 8);
-	if (fread (&data_offset, sizeof (uint16_t), 1, fp) != 1)
+	if (fread (&data_offset, sizeof (uint32_t), 1, fp) != 1)
 		error ("Couldn't read bitmap data offset", fp);
-	skip_bytes (fp, 6);
-	if (fread (&b->width,   sizeof (uint16_t), 1, fp) != 1)
+	skip_bytes (fp, 4);
+	if (fread (&b->width,   sizeof (uint32_t), 1, fp) != 1)
 		error ("Couldn't read bitmap width", fp);
-	skip_bytes (fp, 2);
-	if (fread (&b->height,  sizeof (uint16_t), 1, fp) != 1)
+	//skip_bytes (fp, 2);
+	if (fread (&b->height,  sizeof (uint32_t), 1, fp) != 1)
 		error ("Couldn't read bitmap height", fp);
-	skip_bytes (fp, 22);
-	if (fread (&n_colors, sizeof (uint16_t), 1, fp) != 1)
+	skip_bytes (fp, 20);
+	if (fread (&n_colors, sizeof (uint32_t), 1, fp) != 1)
 		error ("Couldn't read bitmap colors", fp);
-	skip_bytes (fp, 6);
+	skip_bytes (fp, 4);
 
 	/*
 	 * Repair endianess.
@@ -171,6 +174,9 @@ int main (int argc, char *argv[])
 
 	/* seek to offset indicated by file header */
 	fseek(fp, (long)data_offset, SEEK_SET);
+    
+    if ((b->width)%4 != 0)
+		skipByte = ((b->width/4) + 1)*4 - b->width;
 
 	/* read the bitmap; leave room for default color map */
 	printf ("\n");
@@ -179,9 +185,10 @@ int main (int argc, char *argv[])
 	printf("unsigned char bmp_logo_bitmap[] = {\n");
 	for (i=(b->height-1)*b->width; i>=0; i-=b->width) {
 		for (x = 0; x < b->width; x++) {
-			b->data[i + x] = (uint8_t) fgetc (fp) 
+			b->data[(uint32_t) i + x] = (uint8_t) fgetc (fp) \
 						+ DEFAULT_CMAP_SIZE;
 		}
+        skip_bytes (fp, skipByte);
 	}
 
 	for (i=0; i<(b->height*b->width); ++i) {
