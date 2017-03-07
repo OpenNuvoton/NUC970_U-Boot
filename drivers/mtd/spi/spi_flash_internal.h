@@ -37,6 +37,8 @@
 /* Common status */
 #define STATUS_WIP			0x01
 
+#define STATUS_QEB_MXIC			(1UL << 6) //BIT(6)
+
 /* Send a single-byte command to the device and read the response */
 int spi_flash_cmd(struct spi_slave *spi, u8 cmd, void *response, size_t len);
 

@@ -299,7 +299,7 @@ int spi_flash_cmd_read_quad(struct spi_flash *flash, u32 offset,
 	unsigned long page_addr, byte_addr, page_size;
 	size_t chunk_len, actual;
 	int ret = 0;
-	u8 cmd[5];
+	u8 cmd[6], cmd_len;
 	
 	spi->quad_enable = 1;
 	
@@ -310,18 +310,32 @@ int spi_flash_cmd_read_quad(struct spi_flash *flash, u32 offset,
 	page_size = flash->page_size;
 	page_addr = offset / page_size;
 	byte_addr = offset % page_size;
+
+	if (spi_flash_use_4byte_mode(flash)) 
+		cmd_len = 6;
+	else
+		cmd_len = 5;
 	
 	cmd[0] = CMD_READ_ARRAY_QUAD;
 	for (actual = 0; actual < len; actual += chunk_len) {
 		//chunk_len = min(len - actual, page_size - byte_addr);
 		chunk_len = len; //CWWeng 2015.10.21
+
+		if (cmd_len == 5) { //3-byte address
+			cmd[1] = page_addr >> 8;
+			cmd[2] = page_addr;
+			cmd[3] = byte_addr;
+			cmd[4] = 0x0;
+		} else { //4-byte address
+			cmd[1] = page_addr >> 16;
+			cmd[2] = page_addr >> 8;
+			cmd[3] = page_addr;
+			cmd[4] = byte_addr;
+			cmd[5] = 0x0;
+		}
 		
-		cmd[1] = page_addr >> 8;
-		cmd[2] = page_addr;
-		cmd[3] = byte_addr;
-		cmd[4] = 0x0;
-		
-		ret = spi_flash_read_common(flash, cmd, sizeof(cmd),
+		//ret = spi_flash_read_common(flash, cmd, sizeof(cmd),
+		ret = spi_flash_read_common(flash, cmd, cmd_len,
 		       data + actual, chunk_len);
 		if (ret < 0) {
 			debug("SF: read failed");
@@ -468,6 +482,129 @@ int spi_flash_cmd_write_status(struct spi_flash *flash, u8 sr)
 	return 0;
 }
 
+static int read_sr(struct spi_flash *flash, u8 *rs)
+{
+	int ret;
+	u8 cmd;
+
+	cmd = CMD_READ_STATUS;
+	ret = spi_flash_read_common(flash, &cmd, 1, rs, 1);
+	if (ret < 0) {
+		debug("SF: fail to read status register\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static int spi_flash_write_common(struct spi_flash *flash, const u8 *cmd,
+		size_t cmd_len, const void *buf, size_t buf_len)
+{
+	struct spi_slave *spi = flash->spi;
+	unsigned long timeout = SPI_FLASH_PROG_TIMEOUT;
+	int ret;
+
+	if (buf == NULL)
+		timeout = SPI_FLASH_PAGE_ERASE_TIMEOUT;
+
+	ret = spi_claim_bus(spi);
+	if (ret) {
+		debug("SF: unable to claim SPI bus\n");
+		return ret;
+	}
+
+	ret = spi_flash_cmd_write_enable(flash);
+	if (ret < 0) {
+		debug("SF: enabling write failed\n");
+		return ret;
+	}
+
+	ret = spi_flash_cmd_write(spi, cmd, cmd_len, buf, buf_len);
+	if (ret < 0) {
+		debug("SF: write cmd failed\n");
+		return ret;
+	}
+
+	ret = spi_flash_cmd_wait_ready(flash, timeout);
+	if (ret < 0) {
+		debug("SF: write %s timed out\n",
+		      timeout == SPI_FLASH_PROG_TIMEOUT ?
+			"program" : "page erase");
+		return ret;
+	}
+
+	spi_release_bus(spi);
+
+	return ret;
+}
+
+static int write_sr(struct spi_flash *flash, u8 ws)
+{
+	u8 cmd;
+	int ret;
+
+	cmd = CMD_WRITE_STATUS;
+	ret = spi_flash_write_common(flash, &cmd, 1, &ws, 1);
+	if (ret < 0) {
+		debug("SF: fail to write status register\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+#ifdef CONFIG_SPI_FLASH_MACRONIX
+int spi_flash_en_quad_mode(struct spi_flash *flash)
+{
+	u8 qeb_status;
+	int ret;
+
+	ret = read_sr(flash, &qeb_status);
+	if (ret < 0)
+		return ret;
+
+	if (qeb_status & STATUS_QEB_MXIC)
+		return 0;
+
+	ret = write_sr(flash, qeb_status | STATUS_QEB_MXIC);
+	if (ret < 0)
+		return ret;
+
+	/* read SR and check it */
+	ret = read_sr(flash, &qeb_status);
+	if (!(ret >= 0 && (qeb_status & STATUS_QEB_MXIC))) {
+		printf("SF: Macronix SR Quad bit not clear\n");
+		return -1; //-EINVAL;
+	}
+
+	return ret;
+}
+
+static int _spi_flash_disable_quad_mode(struct spi_flash *flash)
+{
+	u8 qeb_status;
+	int ret;
+
+	ret = read_sr(flash, &qeb_status);
+	if (ret < 0)
+		return ret;
+
+	ret = write_sr(flash, qeb_status & ~(STATUS_QEB_MXIC));
+	if (ret < 0)
+		return ret;
+
+	/* read SR and check it */
+	ret = read_sr(flash, &qeb_status);
+	if (!(ret >= 0 && (qeb_status & STATUS_QEB_MXIC))) {
+		printf("SF: Macronix SR Quad bit not clear\n");
+		return -22; //-EINVAL;
+	}
+
+	return ret;
+}
+#endif
+
+#ifdef CONFIG_SPI_FLASH_WINBOND
 int spi_flash_en_quad_mode(struct spi_flash *flash)
 {
 	u8 stat, con, cd;
@@ -571,6 +708,7 @@ static int _spi_flash_disable_quad_mode(struct spi_flash *flash)
 out:
 	return ret;
 }
+#endif
 
 
 int spi_flash_disable_quad_mode(void)
@@ -735,6 +873,7 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 	struct spi_slave *spi;
 	struct spi_flash *flash = NULL;
 	int ret, i, shift;
+	u16 jedec, ext_jedec;
 	u8 idcode[IDCODE_LEN], *idp;
 	char *cp;
 
@@ -775,11 +914,22 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 				break;
 		}
 
+	jedec = idcode[1] << 8 | idcode[2];
+        ext_jedec = idcode[3] << 8 | idcode[4];
+
 	if (!flash) {
 		printf("SF: Unsupported manufacturer %02x\n", *idp);
+		printf("manuf %02x, jedec %04x, ext_jedec %04x\n",
+                       idcode[0], jedec, ext_jedec);
 		goto err_manufacturer_probe;
 	}
 	
+	ret = spi_flash_set_4byte_mode(flash); 
+	if (ret) { 
+		debug("SF: Failed to enable 4 byte mode: %d\n", ret); 
+		goto err_manufacturer_probe; 
+	} 
+
 	cp = getenv("spimode");
 	if (cp) 
                 if(*cp == SPI_QUAD_MODE ) 
@@ -797,12 +947,6 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 	if (flash->memory_map)
 		printf(", mapped at %p", flash->memory_map);
 	puts("\n");
-
-        ret = spi_flash_set_4byte_mode(flash); 
-	if (ret) { 
-		debug("SF: Failed to enable 4 byte mode: %d\n", ret); 
-		goto err_manufacturer_probe; 
-	} 
 
 	spi_release_bus(spi);
 
