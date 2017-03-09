@@ -24,6 +24,10 @@ int spi_flash_en_quad_mode(struct spi_flash *flash);
 int spi_flash_disable_quad_mode(void);
 int spi_flash_reset(void);
 static int _spi_flash_disable_quad_mode(struct spi_flash *flash);
+#ifdef CONFIG_SPI_FLASH_EON
+int EON_en_quad_mode(struct spi_flash *flash);
+int EON_disable_quad_mode(struct spi_flash *flash);
+#endif
 
 static void spi_flash_addr(struct spi_flash *flash, u32 addr, u8 *cmd, u8 *cmd_len)
 {
@@ -59,6 +63,68 @@ static void spi_flash_page_addr(struct spi_flash *flash, u32 page_addr, u32 byte
 	} 
 } 
 
+#ifdef CONFIG_SPI_FLASH_EON
+static int spi_flash_read_write(struct spi_slave *spi,
+				const u8 *cmd, size_t cmd_len,
+				const u8 *data_out, u8 *data_in,
+				size_t data_len)
+{
+	unsigned long flags = SPI_XFER_BEGIN;
+	int ret;
+	//int i;
+
+	if (data_len == 0)
+		flags |= SPI_XFER_END;
+/*	
+	printf("\n[cmd]>>");
+	for(i=0;i<cmd_len;i++)
+		printf("0x%02x ", *(cmd+i));
+	printf("\n");
+*/		
+	if (spi->quad_enable)
+    		flags |= SPI_6WIRE;
+			
+	ret = spi_xfer(spi, cmd_len * 8, cmd, NULL, flags);
+	if (ret) {
+		debug("SF: Failed to send command (%zu bytes): %d\n",
+				cmd_len, ret);
+	} else if (data_len != 0) {
+		if(data_out)
+		{	
+/*
+			printf("data=>>");
+			for(i=0;i<0x50;i++)
+				printf("0x%02x ", *(data_out+i));	
+*/
+		}	
+//		printf("\n");
+		
+		if (spi->quad_enable)
+	    		flags |= SPI_6WIRE;
+		else
+			flags = 0;
+			
+		ret = spi_xfer(spi, data_len * 8, data_out, data_in, flags | SPI_XFER_END);
+		if (ret)
+			debug("SF: Failed to transfer %zu bytes of data: %d\n",
+					data_len, ret);
+	}
+	
+	if(data_in)
+	{	
+/*
+		printf("data<<=");
+		for(i=0;i<0x50;i++)
+			printf("0x%02x ", *(data_in+i));	
+*/
+	}
+//	printf("\n");
+	
+	return ret;
+}
+#endif
+
+#if defined(CONFIG_SPI_FLASH_WINBOND) || defined(CONFIG_SPI_FLASH_MACRONIX) 
 static int spi_flash_read_write(struct spi_slave *spi,
 				const u8 *cmd, size_t cmd_len,
 				const u8 *data_out, u8 *data_in,
@@ -114,6 +180,7 @@ static int spi_flash_read_write(struct spi_slave *spi,
 	
 	return ret;
 }
+#endif
 
 int spi_flash_cmd(struct spi_slave *spi, u8 cmd, void *response, size_t len)
 {
@@ -291,6 +358,81 @@ int spi_flash_cmd_read_fast(struct spi_flash *flash, u32 offset,
 	return spi_flash_read_common(flash, cmd, cmd_len + 1, data, len);
 }
 
+#ifdef CONFIG_SPI_FLASH_EON
+int spi_flash_cmd_read_quad(struct spi_flash *flash, u32 offset,
+               size_t len, void *data)
+{
+	struct spi_slave *spi = flash->spi;
+	
+	unsigned long page_addr, byte_addr, page_size;
+	size_t chunk_len, actual;
+	int ret = 0;
+	u8 cmd[8], cmd_len;
+	
+	EON_en_quad_mode(flash);
+
+	spi->quad_enable = 1;
+
+	/* Handle memory-mapped SPI */
+	if (flash->memory_map)
+		memcpy(data, flash->memory_map + offset, len);
+	
+	page_size = flash->page_size;
+	page_addr = offset / page_size;
+	byte_addr = offset % page_size;
+
+	if (spi_flash_use_4byte_mode(flash)) 
+		cmd_len = 8;
+	else
+		cmd_len = 7;
+	
+	cmd[0] = CMD_READ_QUAD_EON;
+
+	for (actual = 0; actual < len; actual += chunk_len) {
+		//chunk_len = min(len - actual, page_size - byte_addr);
+		chunk_len = len; //CWWeng 2015.10.21
+
+		if (cmd_len == 7) { //3-byte address
+			cmd[1] = page_addr >> 8;
+			cmd[2] = page_addr;
+			cmd[3] = byte_addr;
+			cmd[4] = 0x0;
+			cmd[5] = 0x0;
+			cmd[6] = 0x0;
+		} else { //4-byte address
+			cmd[1] = page_addr >> 16;
+			cmd[2] = page_addr >> 8;
+			cmd[3] = page_addr;
+			cmd[4] = byte_addr;
+			cmd[5] = 0x0;
+			cmd[6] = 0x0;
+			cmd[7] = 0x0;
+		}
+		
+		//ret = spi_flash_read_common(flash, cmd, sizeof(cmd),
+		ret = spi_flash_read_common(flash, cmd, cmd_len,
+		       data + actual, chunk_len);
+		if (ret < 0) {
+			debug("SF: read failed");
+			break;
+		}
+		
+		byte_addr += chunk_len;
+		if (byte_addr == page_size) {
+			page_addr++;
+			byte_addr = 0;
+		}
+	}
+	
+	EON_disable_quad_mode(flash);
+
+	spi->quad_enable = 0;
+
+	return ret;
+}
+#endif
+
+#if defined(CONFIG_SPI_FLASH_WINBOND) || defined(CONFIG_SPI_FLASH_MACRONIX) 
 int spi_flash_cmd_read_quad(struct spi_flash *flash, u32 offset,
                size_t len, void *data)
 {
@@ -353,6 +495,7 @@ int spi_flash_cmd_read_quad(struct spi_flash *flash, u32 offset,
 
 	return ret;
 }
+#endif
 
 int spi_flash_cmd_poll_bit(struct spi_flash *flash, unsigned long timeout,
 			   u8 cmd, u8 poll_bit)
@@ -482,6 +625,7 @@ int spi_flash_cmd_write_status(struct spi_flash *flash, u8 sr)
 	return 0;
 }
 
+#ifdef CONFIG_SPI_FLASH_MACRONIX
 static int read_sr(struct spi_flash *flash, u8 *rs)
 {
 	int ret;
@@ -552,6 +696,7 @@ static int write_sr(struct spi_flash *flash, u8 ws)
 
 	return 0;
 }
+#endif
 
 #ifdef CONFIG_SPI_FLASH_MACRONIX
 int spi_flash_en_quad_mode(struct spi_flash *flash)
@@ -601,6 +746,46 @@ static int _spi_flash_disable_quad_mode(struct spi_flash *flash)
 	}
 
 	return ret;
+}
+#endif
+
+#ifdef CONFIG_SPI_FLASH_EON
+int EON_en_quad_mode(struct spi_flash *flash)
+{
+	int ret;
+
+	spi_claim_bus(flash->spi);
+	ret = spi_flash_cmd(flash->spi, CMD_QUAD_ENABLE, NULL, 0);
+        if (ret) {
+                printf("SF: Failed issue enable quad command (CMD_QUAD_ENABLE)\n");
+        }
+	spi_release_bus(flash->spi);
+
+	return ret;
+}
+
+int EON_disable_quad_mode(struct spi_flash *flash)
+{
+	int ret;
+
+	spi_claim_bus(flash->spi);
+	ret = spi_flash_cmd(flash->spi, CMD_QUAD_RESET, NULL, 0);
+        if (ret) {
+                printf("SF: Failed issue reset quad command (CMD_QUAD_RESET)\n");
+        }
+	spi_release_bus(flash->spi);
+
+	return ret;
+}
+
+int spi_flash_en_quad_mode(struct spi_flash *flash)
+{
+	return 0;
+}
+
+static int _spi_flash_disable_quad_mode(struct spi_flash *flash)
+{
+	return 0;
 }
 #endif
 
@@ -714,7 +899,6 @@ out:
 int spi_flash_disable_quad_mode(void)
 {
 	struct spi_flash *flash;
-	int ret;
 	struct spi_slave *spi;
 
 	/*
@@ -733,7 +917,7 @@ int spi_flash_disable_quad_mode(void)
 	_spi_flash_disable_quad_mode(flash);
 	spi_release_bus(spi);
 
-	return NULL;
+	return 0;
 }
 
 int spi_flash_reset(void)
@@ -770,7 +954,7 @@ int spi_flash_reset(void)
 
 	printf("SF: Device software reset\n");
 	
-	return NULL;
+	return ret;
 }
 
 #ifdef CONFIG_OF_CONTROL
