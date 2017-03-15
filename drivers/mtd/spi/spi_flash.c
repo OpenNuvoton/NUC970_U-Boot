@@ -124,7 +124,7 @@ static int spi_flash_read_write(struct spi_slave *spi,
 }
 #endif
 
-#if defined(CONFIG_SPI_FLASH_WINBOND) || defined(CONFIG_SPI_FLASH_MACRONIX) 
+#if defined(CONFIG_SPI_FLASH_WINBOND) || defined(CONFIG_SPI_FLASH_MACRONIX) || defined(CONFIG_SPI_FLASH_SPANSION)
 static int spi_flash_read_write(struct spi_slave *spi,
 				const u8 *cmd, size_t cmd_len,
 				const u8 *data_out, u8 *data_in,
@@ -354,7 +354,6 @@ int spi_flash_cmd_read_fast(struct spi_flash *flash, u32 offset,
 	spi_flash_addr(flash, offset, cmd, &cmd_len);  
         cmd[cmd_len] = 0x00; 
 
-
 	return spi_flash_read_common(flash, cmd, cmd_len + 1, data, len);
 }
 
@@ -432,7 +431,7 @@ int spi_flash_cmd_read_quad(struct spi_flash *flash, u32 offset,
 }
 #endif
 
-#if defined(CONFIG_SPI_FLASH_WINBOND) || defined(CONFIG_SPI_FLASH_MACRONIX) 
+#if defined(CONFIG_SPI_FLASH_WINBOND) || defined(CONFIG_SPI_FLASH_MACRONIX) || defined(CONFIG_SPI_FLASH_SPANSION)
 int spi_flash_cmd_read_quad(struct spi_flash *flash, u32 offset,
                size_t len, void *data)
 {
@@ -789,7 +788,7 @@ static int _spi_flash_disable_quad_mode(struct spi_flash *flash)
 }
 #endif
 
-#ifdef CONFIG_SPI_FLASH_WINBOND
+#if defined(CONFIG_SPI_FLASH_WINBOND) || defined(CONFIG_SPI_FLASH_SPANSION) 
 int spi_flash_en_quad_mode(struct spi_flash *flash)
 {
 	u8 stat, con, cd;
@@ -940,6 +939,7 @@ int spi_flash_reset(void)
 
 	spi_claim_bus(spi);
 
+#if defined(CONFIG_SPI_FLASH_WINBOND) || defined(CONFIG_SPI_FLASH_MACRONIX) || defined(CONFIG_SPI_FLASH_EON)
 	ret = spi_flash_cmd(spi, CMD_RESET_ENABLE, NULL, 0);
 	if (ret) {
 		printf("SF: Failed issue reset command (CMD_RESET_ENABLE)\n");
@@ -949,6 +949,18 @@ int spi_flash_reset(void)
 	if (ret) {
 		printf("SF: Failed issue reset command (CMD_RESET_MEMORY)\n");
 	}
+#endif
+#ifdef CONFIG_SPI_FLASH_SPANSION
+	ret = spi_flash_cmd(spi, CMD_RESET_SPAN, NULL, 0);
+	if (ret) {
+		printf("SF: Failed issue reset command (CMD_RESET_SPAN)\n");
+	}
+
+	ret = spi_flash_cmd(spi, CMD_RESET_MODE, NULL, 0);
+	if (ret) {
+		printf("SF: Failed issue reset command (CMD_RESET_SPAN)\n");
+	}
+#endif
 
 	spi_release_bus(spi);
 

@@ -31,6 +31,9 @@
 
 #include "spi_flash_internal.h"
 
+#define CMD_BANKADDR_BRWR             0x17    /* write bank address register  */
+#define CMD_BANKADDR_BRRD             0x16    /* read bank address register  */
+
 struct spansion_spi_flash_params {
 	u16 idcode1;
 	u16 idcode2;
@@ -105,6 +108,30 @@ static const struct spansion_spi_flash_params spansion_spi_flash_table[] = {
 	},
 };
 
+static __maybe_unused int spansion_set_4byte_mode(struct spi_flash *flash)
+{
+        struct spi_slave *spi = flash->spi;
+	int ret;
+	u8 cmd,br;
+
+	ret = spi_flash_cmd(spi, CMD_BANKADDR_BRRD, &br, 1);
+        if (ret < 0) {
+                debug("%s: SF: read bank address register failed\n", __func__);
+                return ret;
+        }
+
+	br |= 0x80; //Set br[7] EXTADD=1, 4-byte addressing
+
+	cmd = CMD_BANKADDR_BRWR;
+        ret = spi_flash_cmd_write(spi, &cmd, 1, &br, 1);
+        if (ret) {
+                debug("SF: fail to write bank address register\n");
+                return ret;
+        }
+
+        return ret;
+}
+
 struct spi_flash *spi_flash_probe_spansion(struct spi_slave *spi, u8 *idcode)
 {
 	const struct spansion_spi_flash_params *params;
@@ -137,6 +164,9 @@ struct spi_flash *spi_flash_probe_spansion(struct spi_slave *spi, u8 *idcode)
 	flash->page_size = 256;
 	flash->sector_size = 256 * params->pages_per_sector;
 	flash->size = flash->sector_size * params->nr_sectors;
+
+	if (flash->size > (1 << 24))
+               flash->set_4byte_mode = spansion_set_4byte_mode;
 
 	return flash;
 }

@@ -34,6 +34,10 @@
 #define CMD_RESET_ENABLE 	0x66
 #define CMD_RESET_MEMORY 	0x99
 
+/* Spansion command */
+#define CMD_RESET_SPAN		0xf0
+#define CMD_RESET_MODE		0xff
+
 /* EON commands */
 #define CMD_QUAD_ENABLE			0x38
 #define CMD_QUAD_RESET			0xff
