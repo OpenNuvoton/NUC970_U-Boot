@@ -143,6 +143,8 @@ show_usage:
 	}
 
 	writel(u32PCLK, REG_PCLKEN0);
+
+	return 0;
 }
 
 
