@@ -28,6 +28,7 @@ LIB	= $(obj)lib$(BOARD).o
 COBJS	:= nuc970.o
 COBJS	+= timer.o
 COBJS	+= cmd_decrypt.o
+COBJS	+= cmd_rtc_spare.o
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
