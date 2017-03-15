@@ -147,16 +147,17 @@ static int spi_flash_read_write(struct spi_slave *spi,
 		debug("SF: Failed to send command (%zu bytes): %d\n",
 				cmd_len, ret);
 	} else if (data_len != 0) {
+/*
 		if(data_out)
 		{	
-/*
+
 			printf("data=>>");
 			for(i=0;i<0x50;i++)
 				printf("0x%02x ", *(data_out+i));	
-*/
+
 		}	
-//		printf("\n");
-		
+		printf("\n");
+*/		
 		if (spi->quad_enable)
 	    		flags |= SPI_6WIRE;
 		else
@@ -167,17 +168,17 @@ static int spi_flash_read_write(struct spi_slave *spi,
 			debug("SF: Failed to transfer %zu bytes of data: %d\n",
 					data_len, ret);
 	}
-	
+/*	
 	if(data_in)
 	{	
-/*
+
 		printf("data<<=");
 		for(i=0;i<0x50;i++)
 			printf("0x%02x ", *(data_in+i));	
-*/
+
 	}
-//	printf("\n");
-	
+	printf("\n");
+*/	
 	return ret;
 }
 #endif
@@ -542,6 +543,41 @@ int spi_flash_cmd_wait_ready(struct spi_flash *flash, unsigned long timeout)
 {
 	return spi_flash_cmd_poll_bit(flash, timeout,
 		CMD_READ_STATUS, STATUS_WIP);
+}
+
+int spi_nand_flash_cmd_poll_bit(struct spi_flash *flash, unsigned long timeout,
+                           u8 cmd, u8 poll_bit, u8 *status)
+{
+	struct spi_slave *spi = flash->spi;
+	unsigned long timebase;
+	u8 cmd_buf[2];
+
+	cmd_buf[0] = 0x0F;
+	cmd_buf[1] = cmd;
+
+	timebase = get_timer(0);
+	do {
+		WATCHDOG_RESET();
+
+		spi_flash_cmd_read(spi, cmd_buf, 2, status, 1);
+		if ((*status & poll_bit) == 0)
+			break;
+
+	} while (get_timer(timebase) < timeout);
+
+	if ((*status & poll_bit) == 0)
+		return 0;
+
+	/* Timed out */
+	debug("SF: time out!\n");
+	return -1;
+}
+
+int spi_nand_flash_cmd_wait_ready(struct spi_flash *flash, u8 status_bit, u8 *status,
+                                  unsigned long timeout)
+{
+	return spi_nand_flash_cmd_poll_bit(flash, timeout,
+					   0xC0, status_bit, status);
 }
 
 int spi_flash_cmd_erase(struct spi_flash *flash, u32 offset, size_t len)
@@ -1060,6 +1096,9 @@ static const struct {
 #ifdef CONFIG_SPI_FRAM_RAMTRON_NON_JEDEC
 	{ 0, 0xff, spi_fram_probe_ramtron, },
 #endif
+#ifdef CONFIG_SPI_NAND_WINBOND
+	{ 0, 0xff, spi_nand_flash_probe, },
+#endif
 };
 #define IDCODE_LEN (IDCODE_CONT_LEN + IDCODE_PART_LEN)
 
@@ -1125,11 +1164,12 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 		debug("SF: Failed to enable 4 byte mode: %d\n", ret); 
 		goto err_manufacturer_probe; 
 	} 
-
+#ifndef CONFIG_SPI_NAND_WINBOND  // no need to set this for spi nand
 	cp = getenv("spimode");
 	if (cp) 
                 if(*cp == SPI_QUAD_MODE ) 
 			spi_flash_en_quad_mode(flash);
+#endif
 
 #ifdef CONFIG_OF_CONTROL
 	if (spi_flash_decode_fdt(gd->fdt_blob, flash)) {
