@@ -783,7 +783,9 @@ int board_nand_init(struct nand_chip *nand)
     nand->ecc.size  = mtd->writesize;
 
     nand->options = 0;
-
+#ifdef CONFIG_SYS_NAND_USE_FLASH_BBT
+    nand->options |= NAND_USE_FLASH_BBT;
+#endif
     // Redundant area size
     writel( nuc970_nand->m_i32SMRASize , REG_SMREACTL );
 
