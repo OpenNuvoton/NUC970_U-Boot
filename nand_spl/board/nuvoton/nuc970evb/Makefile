@@ -41,7 +41,7 @@ CFLAGS	+= -DCONFIG_NAND_SPL -ffunction-sections
 
 SOBJS	= start.o cpu_init.o lowlevel_init.o divlib.o _lshrdi3.o _ashldi3.o _ashrdi3.o
 #COBJS	= nand_boot.o nand_ecc.o  nuc970_nand.o nuc970_nand_spl.o nand.o nand_bbt.o nand_ids.o nand_util.o nand_base.o serial_nuc970.o nuc900_sysprintf.o dlmalloc.o timer.o time.o div64.o string.o vsprintf.o
-COBJS	= nand_boot.o nand_ecc.o  nuc970_nand.o nuc970_nand_spl.o nand.o nand_bbt.o nand_ids.o nand_util.o nand_base.o serial_nuc970.o serial.o nuc970_sysprintf.o nuc970_wdt.o timer.o time.o div64.o string.o vsprintf.o stdio.o console.o reset.o interrupts.o nuc970_reset.o ctype.o mtdcore.o mtdpart.o
+COBJS	= nand_boot.o nand_ecc.o  nuc970_nand.o nuc970_nand_spl.o nand.o nand_bbt.o nand_ids.o nand_util.o nand_base.o serial_nuc970.o serial.o nuc970_sysprintf.o nuc970_wdt.o timer.o time.o div64.o string.o vsprintf.o stdio.o console.o reset.o interrupts.o nuc970_reset.o ctype.o mtdcore.o mtdpart.o linux_string.o
 SRCS	:= $(addprefix $(obj),$(SOBJS:.o=.S) $(COBJS:.o=.c))
 OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
 __OBJS	:= $(SOBJS) $(COBJS)
@@ -219,6 +219,11 @@ $(obj)interrupts.c:
 $(obj)nuc970_reset.c:
 	@rm -f $@
 	@ln -s $(TOPDIR)/arch/arm/cpu/arm926ejs/nuc970/reset.c $@
+
+# for CONFIG_SYS_NAND_ONFI_DETECTION
+$(obj)linux_string.c:
+	@rm -f $@
+	@ln -s $(TOPDIR)/lib/linux_string.c $@
 
 #########################################################################
 

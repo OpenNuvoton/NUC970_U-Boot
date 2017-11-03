@@ -22,19 +22,12 @@
 #include <nand.h>
 #include <asm/io.h>
 
-static int nand_ecc_pos[] = CONFIG_SYS_NAND_ECCPOS;
-
-#define ECCSTEPS	(CONFIG_SYS_NAND_PAGE_SIZE / \
-					CONFIG_SYS_NAND_ECCSIZE)
-#define ECCTOTAL	(ECCSTEPS * CONFIG_SYS_NAND_ECCBYTES)
-
-
 static int nand_is_bad_block(struct mtd_info *mtd, int block)
 {
 	struct nand_chip *this = mtd->priv;
 
 	//nand_command(mtd, block, 0, CONFIG_SYS_NAND_BAD_BLOCK_POS, NAND_CMD_READOOB);
-	int page_addr = 0 + block * CONFIG_SYS_NAND_PAGE_COUNT;
+	int page_addr = 0 + block * (mtd->erasesize / mtd->writesize);
 	
 	this->cmdfunc(mtd, NAND_CMD_READOOB, 0 , page_addr );
 
@@ -49,7 +42,7 @@ static int nand_read_page(struct mtd_info *mtd, int block, int page, uchar *dst)
 	struct nand_chip *this = mtd->priv;
 	int real_page;
 
-	real_page = block * (CONFIG_SYS_NAND_BLOCK_SIZE / CONFIG_SYS_NAND_PAGE_SIZE) + page;
+	real_page = block * (mtd->erasesize / mtd->writesize) + page;
 
 	if (this->ecc.read_page)
 		this->ecc.read_page(mtd, this, dst, real_page); //CWWeng : it calls nuc970_nand_read_page_hwecc_oob_first
@@ -62,22 +55,23 @@ static int nand_load(struct mtd_info *mtd, unsigned int offs,
 {
 	unsigned int block, lastblock;
 	unsigned int page;
+	unsigned int page_count = mtd->erasesize / mtd->writesize;
 
 	/*
 	 * offs has to be aligned to a page address!
 	 */
-	block = offs / CONFIG_SYS_NAND_BLOCK_SIZE;
-	lastblock = (offs + uboot_size - 1) / CONFIG_SYS_NAND_BLOCK_SIZE;
-	page = (offs % CONFIG_SYS_NAND_BLOCK_SIZE) / CONFIG_SYS_NAND_PAGE_SIZE;
+	block = offs / mtd->erasesize;
+	lastblock = (offs + uboot_size - 1) / mtd->erasesize;
+	page = (offs % mtd->erasesize) / mtd->writesize;
 
 	while (block <= lastblock) {
 		if (!nand_is_bad_block(mtd, block)) {
 			/*
 			 * Skip bad blocks
 			 */
-			while (page < CONFIG_SYS_NAND_PAGE_COUNT) {
+			while (page < page_count) {
 				nand_read_page(mtd, block, page, dst);
-				dst += CONFIG_SYS_NAND_PAGE_SIZE;
+				dst += mtd->writesize;
 				page++;
 			}
 
@@ -113,12 +107,12 @@ void nand_boot(void)
 	nand_chip.options = 0;
 	board_nand_init(&nand_chip);
 
-
 	if (nand_chip.select_chip)
 		nand_chip.select_chip(&nand_info, 0);
 	
 	if (nand_scan(&nand_info, 1)) //CWWeng
 		return;
+
 	nand_register(0);//CWWeng
 
 	/*

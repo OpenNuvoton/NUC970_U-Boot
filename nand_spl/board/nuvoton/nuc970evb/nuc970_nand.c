@@ -290,7 +290,7 @@ static int nuc970_nand_correct_data(struct mtd_info *mtd, u_char *dat,
 void fmiSM_CorrectData_BCH(u8 ucFieidIndex, u8 ucErrorCnt, u8* pDAddr)
 {
     u32 uaData[24], uaAddr[24];
-    u32 uaErrorData[4];
+    u32 uaErrorData[6];
     u8  ii, jj;
     u32 uPageSize;
     u32 field_len, padding_len, parity_len;
@@ -456,7 +456,7 @@ int fmiSMCorrectData (struct mtd_info *mtd, unsigned long uDAddr )
                     break;
                 } else // uncorrectable error or ECC error
                 {
-//printk("uncorrectable\n");
+printf("uncorrectable\n");
                     return -1;
                 }
                 uStatus >>= 8;
@@ -756,7 +756,7 @@ int board_nand_init(struct nand_chip *nand)
     /* first scan to find the device and get the page size */
     if (nand_scan_ident(&(nuc970_nand->mtd), 1, NULL)) {
         printf("NAND Flash not found !\n");
-        return -1;
+    //    return -1;
     }
 
     //Set PSize bits of SMCSR register to select NAND card page size
@@ -787,6 +787,54 @@ int board_nand_init(struct nand_chip *nand)
 
         default:
             printf("NUC970 NAND CONTROLLER IS NOT SUPPORT THE PAGE SIZE. (%d, %d)\n", mtd->writesize, mtd->oobsize );
+    }
+
+    /* check power on setting */
+    if ((readl(REG_PWRON) & 0x300) != 0x300) { /* ECC */
+        switch ((readl(REG_PWRON) & 0x300)) {
+            case 0x000: // T12
+                nuc970_nand->eBCHAlgo = 2;
+                break;
+
+            case 0x100: // T15
+                nuc970_nand->eBCHAlgo = 3;
+                break;
+
+            case 0x200: // T24
+                nuc970_nand->eBCHAlgo = 4;
+                break;
+
+            default:
+                printf("WRONG ECC Power-On-Setting (0x%x)\n", readl(REG_PWRON));
+        }
+    }
+
+    if ((readl(REG_PWRON) & 0xc0) != 0xc0) { /* page size */
+        switch ((readl(REG_PWRON) & 0xc0)) {
+            case 0x00: // 2KB
+                mtd->writesize = 2048;
+                writel( (readl(REG_SMCSR)&(~0x30000)) + 0x10000, REG_SMCSR);
+                mtd->oobsize = g_i32ParityNum[1][nuc970_nand->eBCHAlgo] + 8;
+                nuc970_layout_oob_table ( &nuc970_nand_oob, mtd->oobsize, g_i32ParityNum[1][nuc970_nand->eBCHAlgo] );
+                break;
+
+            case 0x40: // 4KB
+                mtd->writesize = 4096;
+                writel( (readl(REG_SMCSR)&(~0x30000)) + 0x20000, REG_SMCSR);
+                mtd->oobsize = g_i32ParityNum[2][nuc970_nand->eBCHAlgo] + 8;
+                nuc970_layout_oob_table ( &nuc970_nand_oob, mtd->oobsize, g_i32ParityNum[2][nuc970_nand->eBCHAlgo] );
+                break;
+
+            case 0x80: // 8KB
+                mtd->writesize = 8192;
+                writel( (readl(REG_SMCSR)&(~0x30000)) + 0x30000, REG_SMCSR);
+                mtd->oobsize = g_i32ParityNum[3][nuc970_nand->eBCHAlgo] + 8;
+                nuc970_layout_oob_table ( &nuc970_nand_oob, mtd->oobsize, g_i32ParityNum[3][nuc970_nand->eBCHAlgo] );
+                break;
+
+            default:
+                printf("WRONG NAND page Power-On-Setting (0x%x)\n", readl(REG_PWRON));
+        }
     }
 
     nuc970_nand->m_i32SMRASize  = mtd->oobsize;
