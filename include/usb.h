@@ -132,6 +132,7 @@ struct usb_device {
 	int act_len;			/* transfered bytes */
 	int maxchild;			/* Number of ports if hub */
 	int portnr;
+	int extra_timout;		/* add to timeout in ehci_submit_async */
 	struct usb_device *parent;
 	struct usb_device *children[USB_MAXCHILDREN];
 

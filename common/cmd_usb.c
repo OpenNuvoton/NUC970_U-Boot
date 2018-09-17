@@ -510,10 +510,11 @@ static int do_usb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			printf("\nUSB read: device %d block # %ld, count %ld"
 				" ... ", usb_stor_curr_dev, blk, cnt);
 			stor_dev = usb_stor_get_dev(usb_stor_curr_dev);
+			i = get_timer(0);
 			n = stor_dev->block_read(usb_stor_curr_dev, blk, cnt,
 						 (ulong *)addr);
-			printf("%ld blocks read: %s\n", n,
-				(n == cnt) ? "OK" : "ERROR");
+			printf("%5ld blocks read: %s in %5lu ms\n", n,
+			       (n == cnt) ? "OK   " : "ERROR", get_timer(i));
 			if (n == cnt)
 				return 0;
 			return 1;
